@@ -1,0 +1,15 @@
+{
+	"name": "crypto-boot",
+	"authors": [
+		"boolangery"
+	],
+	"dependencies": {
+		"vibe-d": "~>0.8.2"
+	},
+	"description": "Cryto trading bot",
+	"copyright": "Copyright © 2017, boolangery",
+	"license": "proprietary",
+	"versions": [
+		"VibeUseOpenSSL11"
+	]
+}
