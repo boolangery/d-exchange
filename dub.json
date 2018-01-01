@@ -4,6 +4,7 @@
 		"boolangery"
 	],
 	"dependencies": {
+		"urld": "~>2.1.0",
 		"vibe-d": "~>0.8.2"
 	},
 	"description": "Cryto trading bot",
