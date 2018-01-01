@@ -96,6 +96,9 @@ class BittrexExchange: Exchange {
         return null;
     }
     unittest {
+        import test;
+        auto config = getTestConfig();
+        auto bittrex = new BittrexExchange(config[Exchange.Exchanges.Bittrex].credentials);
     }
 
 }
