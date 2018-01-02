@@ -1,3 +1,7 @@
 .dub/
 crypto-boot-test-library
 unittest.conf
+.idea/
+crypto-boot.iml
+dub.dsl
+libcrypto-boot.a
