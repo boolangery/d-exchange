@@ -68,21 +68,25 @@ struct Credentials {
 }
 
 /**
-    Define available endpoint in the api.
-*/
-interface Endpoints {
-    @property bool hasFetchMarkets();
-    Market[] fetchMarkets();
-}
-
-/**
     Api configuration.
 */
 struct Configuration {
+    string id;      // exchange unique id
+    string name;    // display name
+    string ver;     // api version
     bool substituteCommonCurrencyCodes = true;
 }
 
-abstract class Exchange: Endpoints {
+/**
+    Generic api endpoint.
+*/
+interface IEndpoint {}
+
+interface IFetchMarket: IEndpoint {
+    Market[] fetchMarkets();
+}
+
+abstract class Exchange {
     public static enum Exchanges {
         Bittrex = "bittrex"
     }
@@ -90,6 +94,16 @@ abstract class Exchange: Endpoints {
     public Credentials credentials;
 
     private Configuration _configuration;
+
+    /**
+        Check if the api implements the endpoint.
+        Exemple: bittrex.hasEndpoint!IFetchMarket()
+    */
+    template hasEndpoint(T) if (is(T == IEndpoint)) {
+        public bool hasEndpoint() {
+            return (cast(T)this != null);
+        }
+    }
 
     /**
         Constructor.
@@ -101,7 +115,7 @@ abstract class Exchange: Endpoints {
     /**
         Configure the api.
     */
-    protected abstract void configure(ref Configuration configuration);
+    protected abstract void configure(ref Configuration config);
 
     /**
         Return an unix timestamp.
@@ -160,6 +174,13 @@ abstract class Exchange: Endpoints {
                 return COMMON[currency];
         }
         return currency;
+    }
+
+    /**
+        Load markets in cache.
+    */
+    protected const void loadMarkets(bool reload=false) {
+
     }
 }
 

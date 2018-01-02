@@ -1,5 +1,5 @@
 {
-	"name": "crypto-boot",
+	"name": "d-exchange",
 	"authors": [
 		"boolangery"
 	],
@@ -7,7 +7,7 @@
 		"urld": "~>2.1.0",
 		"vibe-d": "~>0.8.2"
 	},
-	"description": "Cryto trading bot",
+	"description": "Crypto exchange api",
 	"copyright": "Copyright © 2017, boolangery",
 	"license": "proprietary",
 	"versions": [

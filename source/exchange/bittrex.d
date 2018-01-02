@@ -2,21 +2,17 @@ module bittrex;
 
 import std.conv;
 import std.math;
-import api;
+import std.string;
 import vibe.data.json;
 import vibe.data.bson;
 import vibe.web.rest;
 import vibe.http.common;
 import url;
+import api;
 
 
-
-// ////////////////////////////////////////////////////////////////////////////
-// REST Api                                                                  //
-// ////////////////////////////////////////////////////////////////////////////
-// JSON Reponses //////////////////////////////////////////////////////////////
 /**
-    Generic Bittrex response.
+    Json Generic Bittrex response.
 */
 struct BittrexResponse(T) {
     bool success;
@@ -25,7 +21,7 @@ struct BittrexResponse(T) {
 }
 
 /**
-    Markets response.
+    Json Markets response.
 */
 struct BittrexMarket {
     @name("MarketCurrency") string marketCurrency;
@@ -42,35 +38,39 @@ struct BittrexMarket {
 }
 
 
-class BittrexExchange: Exchange {
+class BittrexExchange: Exchange, IFetchMarket {
     private string _baseUrl = "https://bittrex.com/api/v1.1/public/";
     private const Credentials _credentials;
+    private
 
     this(Credentials credentials) {
         this._credentials = credentials;
     }
 
-    protected override void configure(ref Configuration configuration) {
-
+    protected override void configure(ref Configuration config) {
+        config.id   = "bittres";
+        config.name = "Bittrex";
+        config.ver  = "v1.1";
     }
 
     /**
         Bittrex signing process.
     */
     protected override const void signRequest(url.URL url, out string[string] headers) {
-        import std.digest.hmac;
-        import std.digest : toHexString;
-        import std.digest.sha : SHA512;
-        import std.string : representation;
+        if (!indexOf(url.path, "public")) {
+            import std.digest.hmac;
+            import std.digest : toHexString;
+            import std.digest.sha : SHA512;
 
-        long nonce = this.getUnixTimestamp();
-        url.queryParams.overwrite("apikey", _credentials.apiKey);
-        url.queryParams.overwrite("nonce", to!string(nonce));
-        string sign = url.toString()
-            .representation
-            .hmac!SHA512(_credentials.secretApiKey.representation)
-            .toHexString!(LetterCase.lower);
-        headers["apisign"] = sign;
+            long nonce = this.getUnixTimestamp();
+            url.queryParams.overwrite("apikey", _credentials.apiKey);
+            url.queryParams.overwrite("nonce", to!string(nonce));
+            string sign = url.toString()
+                .representation
+                .hmac!SHA512(_credentials.secretApiKey.representation)
+                .toHexString!(LetterCase.lower);
+            headers["apisign"] = sign;
+        }
     }
 
 
@@ -92,13 +92,15 @@ class BittrexExchange: Exchange {
             markets[k].limits.amount.min = m.minTradeSize;
             k++;
         }
-        BittrexResponse!BittrexMarket response;
-        return null;
+        return markets;
     }
     unittest {
         import test;
         auto config = getTestConfig();
         auto bittrex = new BittrexExchange(config[Exchange.Exchanges.Bittrex].credentials);
+
+        auto markets = bittrex.fetchMarkets();
+        assert(markets.length > 100, "No market fetched");
     }
 
 }
