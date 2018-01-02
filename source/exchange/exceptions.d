@@ -4,7 +4,15 @@ module exceptions;
 /**
     Base class for all exceptions.
 */
-class BaseError: Exception {}
+class BaseError: Exception {
+    this() {
+        super("");
+    }
+
+    this(const string message) {
+        super(message);
+    }
+}
 
 /**
     Raised when an exchange server replies with an error in JSON.
