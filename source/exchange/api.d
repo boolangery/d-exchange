@@ -6,7 +6,8 @@ import vibe.core.log;
 import std.typecons;
 import url;
 
-public enum RateType {PerSecond, PerMinute, PerHour}
+public enum RateType {PerMilis, PerSecond, PerMinute, PerHour}
+
 /**
     A class to manage api rate limit.
 */
@@ -21,16 +22,20 @@ class RateLimitManager {
         _type = type;
         final switch (type)
         {
-            case RateType.PerSecond:
+            case RateType.PerMilis:
                 _rate = dur!"msecs"(1) / rateLimit;
                 break;
 
-            case RateType.PerMinute:
+            case RateType.PerSecond:
                 _rate = dur!"seconds"(1) / rateLimit;
                 break;
 
-            case RateType.PerHour:
+            case RateType.PerMinute:
                 _rate = dur!"minutes"(1) / rateLimit;
+                break;
+
+            case RateType.PerHour:
+                _rate = dur!"hours"(1) / rateLimit;
                 break;
         }
     }
@@ -45,8 +50,57 @@ class RateLimitManager {
     /**
         Check if the theoretically rate limit is excedded.
     */
-    bool isLimitExceeded() {
+    const bool isLimitExceeded() {
         return ((MonoTime.currTime - _lastRequest) < _rate);
+    }
+
+    unittest {
+        import core.thread: Thread;
+
+        auto rmm = new RateLimitManager(RateType.PerMilis, 4);
+        rmm.addRequest();
+        Thread.sleep(dur!("usecs")(250));
+        assert(!rmm.isLimitExceeded());
+        rmm.addRequest();
+        Thread.sleep(dur!("usecs")(250));
+        assert(!rmm.isLimitExceeded());
+        rmm.addRequest();
+        Thread.sleep(dur!("usecs")(250));
+        assert(!rmm.isLimitExceeded());
+        rmm.addRequest();
+        Thread.sleep(dur!("usecs")(250));
+        assert(!rmm.isLimitExceeded());
+
+        rmm.addRequest();
+        rmm.addRequest();
+        assert(rmm.isLimitExceeded());
+    }
+}
+
+/**
+    A class to manage api cache.
+*/
+class CacheManager {
+    private Object[string] _cache;
+    private RateLimitManager _manager;
+
+    this(RateLimitManager manager) {
+        _manager = manager;
+    }
+
+    bool isCacheAvailable(string key) {
+        return (key in _cache) && !_manager.isLimitExceeded();
+    }
+
+    template TData(T) {
+        T getCache(string key) {
+            return cast(T) _cache[key];
+        }
+    }
+
+    void cache(string key, Object data) {
+        _cache[key] = data;
+        _manager.addRequest();
     }
 }
 
@@ -143,7 +197,7 @@ abstract class Exchange {
     public Credentials credentials;
 
     private Configuration _configuration;
-    private const RateLimitManager _rateManager;
+    protected const RateLimitManager _rateManager;
 
     /**
         Constructor.
