@@ -6,6 +6,50 @@ import vibe.core.log;
 import std.typecons;
 import url;
 
+public enum RateType {PerSecond, PerMinute, PerHour}
+/**
+    A class to manage api rate limit.
+*/
+class RateLimitManager {
+    import std.datetime;
+
+    private RateType _type;
+    private MonoTime _lastRequest;
+    private Duration _rate;
+
+    this(RateType type, int rateLimit) {
+        _type = type;
+        final switch (type)
+        {
+            case RateType.PerSecond:
+                _rate = dur!"msecs"(1) / rateLimit;
+                break;
+
+            case RateType.PerMinute:
+                _rate = dur!"seconds"(1) / rateLimit;
+                break;
+
+            case RateType.PerHour:
+                _rate = dur!"minutes"(1) / rateLimit;
+                break;
+        }
+    }
+
+    /**
+        Add a request to this rate limit manager.
+    */
+    void addRequest() {
+        _lastRequest = MonoTime.currTime;
+    }
+
+    /**
+        Check if the theoretically rate limit is excedded.
+    */
+    bool isLimitExceeded() {
+        return ((MonoTime.currTime - _lastRequest) < _rate);
+    }
+}
+
 /**
     Represent a min/max amount.
 */
@@ -68,16 +112,6 @@ struct Credentials {
 }
 
 /**
-    Api configuration.
-*/
-struct Configuration {
-    string id;      // exchange unique id
-    string name;    // display name
-    string ver;     // api version
-    bool substituteCommonCurrencyCodes = true;
-}
-
-/**
     Generic api endpoint.
 */
 interface IEndpoint {}
@@ -86,30 +120,54 @@ interface IFetchMarket: IEndpoint {
     Market[] fetchMarkets();
 }
 
-abstract class Exchange {
-    public static enum Exchanges {
-        Bittrex = "bittrex"
-    }
+/**
+    Enumaration of known exchanges.
+*/
+public static enum Exchanges {
+    Bittrex = "bittrex"
+}
 
+/**
+    Api configuration.
+*/
+struct Configuration {
+    string id;      // exchange unique id
+    string name;    // display name
+    string ver;     // api version
+    int rateLimit;          // number or request per hour
+    RateType rateLimitType; // rate limit type, limit per second, minute, hour..
+    bool substituteCommonCurrencyCodes = true;
+}
+
+abstract class Exchange {
     public Credentials credentials;
 
     private Configuration _configuration;
-
-    /**
-        Check if the api implements the endpoint.
-        Exemple: bittrex.hasEndpoint!IFetchMarket()
-    */
-    template hasEndpoint(T) if (is(T == IEndpoint)) {
-        public bool hasEndpoint() {
-            return (cast(T)this != null);
-        }
-    }
+    private const RateLimitManager _rateManager;
 
     /**
         Constructor.
     */
     this () {
         this.configure(this._configuration);
+        _rateManager = new RateLimitManager(_configuration.rateLimitType, _configuration.rateLimit);
+    }
+
+    template TEndpoint(T) if (is(T == IEndpoint)) {
+        /**
+            Check if the api implements the endpoint.
+            Exemple: bittrex.hasEndpoint!IFetchMarket()
+        */
+        public bool hasEndpoint() {
+            return (cast(T) this != null);
+        }
+
+        /**
+            Cast the api in the type of the requested endpoint.
+        */
+        public T asEndpoint(T) {
+            return (cast(T) this);
+        }
     }
 
     /**

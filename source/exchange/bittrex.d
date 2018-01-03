@@ -48,7 +48,7 @@ class BittrexExchange: Exchange, IFetchMarket {
     }
 
     protected override void configure(ref Configuration config) {
-        config.id   = "bittres";
+        config.id   = "bittrex";
         config.name = "Bittrex";
         config.ver  = "v1.1";
     }
@@ -74,7 +74,6 @@ class BittrexExchange: Exchange, IFetchMarket {
     }
 
 
-    @property bool hasFetchMarkets() { return true; }
     Market[] fetchMarkets() {
         auto resp = this.jsonHttpRequest!(BittrexResponse!(BittrexMarket[]))(parseURL("https://bittrex.com/api/v1.1/public/getmarkets"), HTTPMethod.GET);
         // convert to generic response:
@@ -97,7 +96,7 @@ class BittrexExchange: Exchange, IFetchMarket {
     unittest {
         import test;
         auto config = getTestConfig();
-        auto bittrex = new BittrexExchange(config[Exchange.Exchanges.Bittrex].credentials);
+        auto bittrex = new BittrexExchange(config[Exchanges.Bittrex].credentials);
 
         auto markets = bittrex.fetchMarkets();
         assert(markets.length > 100, "No market fetched");

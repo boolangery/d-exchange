@@ -20,7 +20,7 @@ TestConfiguration[string] getTestConfig() {
     import std.file;
     import std.stdio;
     import std.traits;
-    import api : Exchange;
+    import api : Exchanges;
     import vibe.data.json;
 
     // if the file doesn't exists, create a stub:
@@ -29,7 +29,7 @@ TestConfiguration[string] getTestConfig() {
 
         TestConfiguration[string] config;
         // iterate over exchange ids:
-        foreach (immutable api; [EnumMembers!(Exchange.Exchanges)]) {
+        foreach (immutable api; [EnumMembers!(Exchanges)]) {
             auto c = TestConfiguration();
             c.credentials.apiKey = "my_" ~ api ~ "api_key";
             c.credentials.secretApiKey = "my_" ~ api ~ "secret_api_key";
