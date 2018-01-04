@@ -14,7 +14,7 @@ import api;
 /**
     Json Generic Bittrex response.
 */
-struct BittrexResponse(T) {
+class BittrexResponse(T) {
     bool success;
     string message;
     @optional T result;
@@ -23,7 +23,7 @@ struct BittrexResponse(T) {
 /**
     Json Markets response.
 */
-struct BittrexMarket {
+class BittrexMarket {
     @name("MarketCurrency") string marketCurrency;
     @name("BaseCurrency") string baseCurrency;
     @name("MarketCurrencyLong") string marketCurrencyLong;
@@ -40,11 +40,9 @@ struct BittrexMarket {
 
 class BittrexExchange: Exchange, IFetchMarket {
     private string _baseUrl = "https://bittrex.com/api/v1.1/public/";
-    private const Credentials _credentials;
-    private
 
     this(Credentials credentials) {
-        this._credentials = credentials;
+        super(credentials);
     }
 
     protected override void configure(ref Configuration config) {
@@ -75,7 +73,7 @@ class BittrexExchange: Exchange, IFetchMarket {
 
 
     Market[] fetchMarkets() {
-        auto resp = this.jsonHttpRequest!(BittrexResponse!(BittrexMarket[]))(parseURL("https://bittrex.com/api/v1.1/public/getmarkets"), HTTPMethod.GET);
+        auto resp = this.jsonHttpRequestCached!(BittrexResponse!(BittrexMarket[]))(parseURL("https://bittrex.com/api/v1.1/public/getmarkets"), HTTPMethod.GET);
         // convert to generic response:
         Market[] markets = new Market[resp.result.length];
         int k = 0;

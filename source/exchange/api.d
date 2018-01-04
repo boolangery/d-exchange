@@ -88,17 +88,15 @@ class CacheManager {
         _manager = manager;
     }
 
-    bool isCacheAvailable(string key) {
+    bool isFresh(string key) {
         return (key in _cache) && !_manager.isLimitExceeded();
     }
 
-    template TData(T) {
-        T getCache(string key) {
-            return cast(T) _cache[key];
-        }
+    T get(T)(string key) {
+        return cast(T) _cache[key];
     }
 
-    void cache(string key, Object data) {
+    void set(string key, Object data) {
         _cache[key] = data;
         _manager.addRequest();
     }
@@ -194,34 +192,36 @@ struct Configuration {
 }
 
 abstract class Exchange {
-    public Credentials credentials;
+    protected Credentials _credentials;
 
+    private CacheManager _cache;
     private Configuration _configuration;
-    protected const RateLimitManager _rateManager;
+    private RateLimitManager _rateManager;
+
 
     /**
         Constructor.
     */
-    this () {
+    this(Credentials credential) {
+        _credentials = credential;
         this.configure(this._configuration);
         _rateManager = new RateLimitManager(_configuration.rateLimitType, _configuration.rateLimit);
+        _cache = new CacheManager(_rateManager);
     }
 
-    template TEndpoint(T) if (is(T == IEndpoint)) {
-        /**
-            Check if the api implements the endpoint.
-            Exemple: bittrex.hasEndpoint!IFetchMarket()
-        */
-        public bool hasEndpoint() {
-            return (cast(T) this != null);
-        }
+    /**
+        Check if the api implements the endpoint.
+        Exemple: bittrex.hasEndpoint!IFetchMarket()
+    */
+    public T hasEndpoint(T: IEndpoint)() {
+        return (cast(T) this != null);
+    }
 
-        /**
-            Cast the api in the type of the requested endpoint.
-        */
-        public T asEndpoint(T) {
-            return (cast(T) this);
-        }
+    /**
+        Cast the api in the type of the requested endpoint.
+    */
+    public T asEndpoint(T: IEndpoint)() {
+        return (cast(T) this);
     }
 
     /**
@@ -244,11 +244,11 @@ abstract class Exchange {
     */
     protected abstract const void signRequest(url.URL currentUrl, out string[string] headers);
 
-    /**
-        Performs a synchronous HTTP request on the specified URL,
-        using the specified method.
-    */
     template jsonHttpRequest(T) if (is(T == class) | is(T == struct)) {
+        /**
+            Performs a synchronous HTTP request on the specified URL,
+            using the specified method.
+        */
         protected const T jsonHttpRequest(url.URL url, HTTPMethod method, string[string] headers=null) {
             import vibe.data.serialization;
             import vibe.data.json;
@@ -270,6 +270,24 @@ abstract class Exchange {
 		        }
 	        );
 	        return data;
+        }
+    }
+
+    template jsonHttpRequestCached(T) if (is(T == class) | is(T == struct)) {
+        /**
+            Performs a synchronous HTTP request on the specified URL,
+            using the specified method, if api limit rate not exceeded.
+            If api limit rate is exceeded, it try to return cached data.
+        */
+        protected T jsonHttpRequestCached(url.URL url, HTTPMethod method, string[string] headers=null) {
+            string cacheId = url.toString();
+            if (_cache.isFresh(cacheId))
+                return _cache.get!T(cacheId);
+            else {
+                T data = jsonHttpRequest!T(url, method, headers);
+                _cache.set(cacheId, data);
+                return data;
+            }
         }
     }
 
