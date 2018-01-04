@@ -37,8 +37,23 @@ class BittrexMarket {
     @name("LogoUrl") @optional string logoUrl;
 }
 
+/**
+    Json Order response.
+*/
+class BittrexOrder {
+    @name("Quantity") string quantity;
+    @name("Rate") string rate;
+}
 
-class BittrexExchange: Exchange, IFetchMarket {
+/**
+    Json Order Book response.
+*/
+class BittrexOrderBook {
+    @optional @name("buy") BittrexOrder[] buyOrders;
+    @optional @name("sell") BittrexOrder[] sellOrders;
+}
+
+class BittrexExchange: Exchange, IMarket, IOrderBook {
     private string _baseUrl = "https://bittrex.com/api/v1.1/public/";
 
     this(Credentials credentials) {
@@ -100,4 +115,37 @@ class BittrexExchange: Exchange, IFetchMarket {
         assert(markets.length > 100, "No market fetched");
     }
 
+    OrderBook fetchOrderBook(string symbol, OrderBookType type) {
+        enum TYPE_TXT = [
+            OrderBookType.Sell : "sell",
+            OrderBookType.Buy  : "buy",
+            OrderBookType.Both : "both",
+        ];
+        url.URL url = parseURL("https://bittrex.com/api/v1.1/public/getorderbook");
+        url.queryParams.overwrite("market", symbol);
+        url.queryParams.overwrite("type", TYPE_TXT[type]);
+        auto resp = this.jsonHttpRequestCached!(BittrexResponse!BittrexOrderBook)(url, HTTPMethod.GET);
+        // translate to generic one:
+        OrderBook book;
+        // TODO: translate
+        return book;
+    }
 }
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
