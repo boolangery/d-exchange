@@ -135,6 +135,19 @@ struct Precision {
 }
 
 /**
+    Represent api credentials.
+*/
+struct Credentials {
+    string apiKey;
+    string secretApiKey;
+}
+
+/**
+    Generic api endpoint.
+*/
+interface IEndpoint {}
+
+/**
     Represent a generic market.
 */
 struct Market {
@@ -155,21 +168,31 @@ struct Market {
     };
 }
 
+interface IMarket: IEndpoint {
+    Market[] fetchMarkets();
+}
+
+enum OrderBookType {Buy, Sell, Both}
+
 /**
-    Represent api credentials.
+    Represent an order.
 */
-struct Credentials {
-    string apiKey;
-    string secretApiKey;
+struct Order {
+    double quantity;
+    double rate;
 }
 
 /**
-    Generic api endpoint.
+    Represent a generic order book.
 */
-interface IEndpoint {}
+struct OrderBook {
+    OrderBookType type;
+    Order[] buyOrders;
+    Order[] sellOrders;
+}
 
-interface IFetchMarket: IEndpoint {
-    Market[] fetchMarkets();
+interface IOrderBook: IEndpoint {
+    OrderBook fetchOrderBook(string symbol, OrderBookType type);
 }
 
 /**
@@ -298,7 +321,8 @@ abstract class Exchange {
         enum COMMON = [
             "XBT": "BTC",
             "BCC": "BCH",
-            "DRK": "DASH"];
+            "DRK": "DASH"
+        ];
         if (this._configuration.substituteCommonCurrencyCodes) {
             if (currency in COMMON)
                 return COMMON[currency];
