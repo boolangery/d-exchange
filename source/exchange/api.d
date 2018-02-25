@@ -4,6 +4,7 @@ import vibe.http.client;
 import vibe.stream.operations;
 import vibe.core.log;
 import std.typecons;
+import std.container;
 import url;
 
 public enum RateType {PerMilis, PerSecond, PerMinute, PerHour}
@@ -102,6 +103,10 @@ class CacheManager {
     }
 }
 
+interface IGenericResponse(T) {
+    T toGeneric();
+}
+
 /**
     Represent a min/max amount.
 */
@@ -150,7 +155,7 @@ interface IEndpoint {}
 /**
     Represent a generic market.
 */
-struct Market {
+class Market {
     string id;
     string base;
     string quote;
@@ -169,7 +174,7 @@ struct Market {
 }
 
 interface IMarket: IEndpoint {
-    Market[] fetchMarkets();
+    Array!Market fetchMarkets();
 }
 
 enum OrderBookType {Buy, Sell, Both}
@@ -177,7 +182,7 @@ enum OrderBookType {Buy, Sell, Both}
 /**
     Represent an order.
 */
-struct Order {
+class Order {
     double quantity;
     double rate;
 }
@@ -185,10 +190,10 @@ struct Order {
 /**
     Represent a generic order book.
 */
-struct OrderBook {
+class OrderBook {
     OrderBookType type;
-    Order[] buyOrders;
-    Order[] sellOrders;
+    Array!Order buyOrders;
+    Array!Order sellOrders;
 }
 
 interface IOrderBook: IEndpoint {
@@ -209,7 +214,7 @@ struct Configuration {
     string id;      // exchange unique id
     string name;    // display name
     string ver;     // api version
-    int rateLimit;          // number or request per hour
+    int rateLimit = 36000;  // number or request per rateLimitType
     RateType rateLimitType; // rate limit type, limit per second, minute, hour..
     bool substituteCommonCurrencyCodes = true;
 }

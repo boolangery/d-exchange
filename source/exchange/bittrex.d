@@ -3,6 +3,7 @@ module bittrex;
 import std.conv;
 import std.math;
 import std.string;
+import std.container;
 import vibe.data.json;
 import vibe.data.bson;
 import vibe.web.rest;
@@ -14,7 +15,8 @@ import api;
 /**
     Json Generic Bittrex response.
 */
-class BittrexResponse(T) {
+class BittrexResponse(T)
+{
     bool success;
     string message;
     @optional T result;
@@ -23,7 +25,7 @@ class BittrexResponse(T) {
 /**
     Json Markets response.
 */
-class BittrexMarket {
+class BittrexMarket: IGenericResponse!Market {
     @name("MarketCurrency") string marketCurrency;
     @name("BaseCurrency") string baseCurrency;
     @name("MarketCurrencyLong") string marketCurrencyLong;
@@ -35,23 +37,66 @@ class BittrexMarket {
     @name("Notice") @optional string notice;
     @name("IsSponsored") @optional bool isSponsored;
     @name("LogoUrl") @optional string logoUrl;
+
+    Market toGeneric() {
+        Market market = new Market();
+        market.id = this.marketName;
+        market.base = this.marketCurrency;
+        market.quote = this.baseCurrency;
+        market.symbol = market.base ~ "/" ~ market.quote;
+        market.active = this.isActive;
+        market.precision.amount = 8; // TODO: check
+        market.precision.price = 8;
+        market.lot = pow(10, -market.precision.amount);
+        market.limits.amount.min = this.minTradeSize;
+        return market;
+    }
 }
 
 /**
     Json Order response.
 */
-class BittrexOrder {
-    @name("Quantity") string quantity;
-    @name("Rate") string rate;
+class BittrexOrder: IGenericResponse!Order {
+    @name("Quantity") double quantity;
+    @name("Rate") double rate;
+
+    Order toGeneric() {
+        Order order = new Order();
+        order.quantity = this.quantity;
+        order.rate = this.rate;
+        return order;
+    }
 }
 
 /**
-    Json Order Book response.
+    Json Order Book response (type Both).
 */
-class BittrexOrderBook {
+class BittrexOrderBookBoth: IGenericResponse!OrderBook {
     @optional @name("buy") BittrexOrder[] buyOrders;
     @optional @name("sell") BittrexOrder[] sellOrders;
+
+    OrderBook toGeneric() {
+        OrderBook orderBook;
+        if (buyOrders.length > 0 && sellOrders.length > 0) {
+            orderBook.type = OrderBookType.Both;
+        }
+        else if (buyOrders.length > 0) {
+            orderBook.type = OrderBookType.Buy;
+        }
+        else {
+            orderBook.type = OrderBookType.Sell;
+        }
+
+        foreach (order; this.buyOrders) {
+            orderBook.buyOrders.insertBack(order.toGeneric());
+        }
+        foreach (order; this.sellOrders) {
+            orderBook.sellOrders.insertBack(order.toGeneric());
+        }
+        return orderBook;
+    }
 }
+
 
 class BittrexExchange: Exchange, IMarket, IOrderBook {
     private string _baseUrl = "https://bittrex.com/api/v1.1/public/";
@@ -64,6 +109,7 @@ class BittrexExchange: Exchange, IMarket, IOrderBook {
         config.id   = "bittrex";
         config.name = "Bittrex";
         config.ver  = "v1.1";
+        config.rateLimit = 100;
     }
 
     /**
@@ -87,30 +133,24 @@ class BittrexExchange: Exchange, IMarket, IOrderBook {
     }
 
 
-    Market[] fetchMarkets() {
+    Array!Market fetchMarkets() {
         auto resp = this.jsonHttpRequestCached!(BittrexResponse!(BittrexMarket[]))(parseURL("https://bittrex.com/api/v1.1/public/getmarkets"), HTTPMethod.GET);
         // convert to generic response:
-        Market[] markets = new Market[resp.result.length];
-        int k = 0;
-        foreach (m; resp.result) {
-            markets[k].id = m.marketName;
-            markets[k].base = this.commonCurrencyCode(m.marketCurrency);
-            markets[k].quote = this.commonCurrencyCode(m.baseCurrency);
-            markets[k].symbol = markets[k].base ~ "/" ~ markets[k].quote;
-            markets[k].active = m.isActive;
-            markets[k].precision.amount = 8; // TODO: check
-            markets[k].precision.price = 8;
-            markets[k].lot = pow(10, -markets[k].precision.amount);
-            markets[k].limits.amount.min = m.minTradeSize;
-            k++;
+        auto markets = Array!Market();
+
+        foreach (bittrexMarket; resp.result) {
+            Market market = bittrexMarket.toGeneric();
+            market.base = this.commonCurrencyCode(market.base);
+            market.quote = this.commonCurrencyCode(market.quote);
+            markets.insertBack(market);
         }
         return markets;
     }
     unittest {
         import test;
         auto config = getTestConfig();
-        auto bittrex = new BittrexExchange(config[Exchanges.Bittrex].credentials);
 
+        auto bittrex = new BittrexExchange(config[Exchanges.Bittrex].credentials);
         auto markets = bittrex.fetchMarkets();
         assert(markets.length > 100, "No market fetched");
     }
@@ -124,11 +164,39 @@ class BittrexExchange: Exchange, IMarket, IOrderBook {
         url.URL url = parseURL("https://bittrex.com/api/v1.1/public/getorderbook");
         url.queryParams.overwrite("market", symbol);
         url.queryParams.overwrite("type", TYPE_TXT[type]);
-        auto resp = this.jsonHttpRequestCached!(BittrexResponse!BittrexOrderBook)(url, HTTPMethod.GET);
-        // translate to generic one:
-        OrderBook book;
-        // TODO: translate
-        return book;
+
+        // Reponses are different for both and buy/sell
+        if (type == OrderBookType.Both) {
+            auto resp = this.jsonHttpRequestCached!(BittrexResponse!BittrexOrderBookBoth)(url, HTTPMethod.GET);
+            return resp.result.toGeneric();
+        }
+        else {
+            auto resp = this.jsonHttpRequestCached!(BittrexResponse!(BittrexOrder[]))(url, HTTPMethod.GET);
+            auto orderBook = new OrderBook();
+            orderBook.type = type;
+            if (type == OrderBookType.Buy) {
+                foreach (bittrexOrder; resp.result) {
+                    orderBook.buyOrders.insertBack(bittrexOrder.toGeneric());
+                }
+            }
+            else {
+                foreach (bittrexOrder; resp.result) {
+                    orderBook.sellOrders.insertBack(bittrexOrder.toGeneric());
+                }
+            }
+            return orderBook;
+        }
+    }
+    unittest {
+        import test;
+        auto config = getTestConfig();
+
+        auto bittrex = new BittrexExchange(config[Exchanges.Bittrex].credentials);
+        auto book = bittrex.fetchOrderBook("BTC-ETH", OrderBookType.Sell);
+
+        assert(book.sellOrders.length > 50, "No orders fetched");
+        assert(book.buyOrders.length == 0, "No buy orders must be fetched");
+        assert(book.type == OrderBookType.Sell);
     }
 }
 
