@@ -1,16 +1,20 @@
 {
-	"name": "d-exchange",
+	"name": "crypto",
 	"authors": [
 		"boolangery"
 	],
 	"dependencies": {
 		"urld": "~>2.1.0",
-		"vibe-d": "~>0.8.2"
+		"vibe-d": "~>0.8.4"
 	},
+	"targetType": "none",
 	"description": "Crypto exchange api",
 	"copyright": "Copyright © 2017, boolangery",
 	"license": "proprietary",
 	"versions": [
 		"VibeUseOpenSSL11"
+	],
+	"subPackages": [
+		"exchanges"
 	]
 }
