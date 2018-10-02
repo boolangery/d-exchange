@@ -7,8 +7,31 @@
 module common;
 
 import crypto.api : Credentials;
+import std.experimental.logger;
 
 public import unit_threaded;
+
+
+/// A custom logger to log messages to unit_threaded system.
+class UnitThreadedLogger : Logger
+{
+    this(LogLevel lv) @safe
+    {
+        super(lv);
+    }
+
+    override void writeLogMsg(ref LogEntry payload)
+    {
+        writelnUt(payload.msg);
+    }
+}
+
+static this()
+{
+    // setup logger
+    sharedLog = new UnitThreadedLogger(LogLevel.all);
+}
+
 
 /**
     Contains test configuration about an exchange api.

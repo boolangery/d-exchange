@@ -270,7 +270,10 @@ abstract class Exchange {
         Called before making the http request to sign the request
         if needed. Return the new url.
     */
-    protected abstract const void signRequest(url.URL currentUrl, out string[string] headers);
+    protected const void signRequest(url.URL currentUrl, out string[string] headers)
+    {
+
+    }
 
     template jsonHttpRequest(T) if (is(T == class) | is(T == struct)) {
         /**
