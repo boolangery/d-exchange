@@ -17,7 +17,7 @@ unittest {
 
 
     binance.addCandleListener(TradingPair("bnb", "btc"), (scope candle) {
-
+        writelnUt("CALLED");
 
     });
 }

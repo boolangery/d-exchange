@@ -53,6 +53,12 @@ public:
 
 alias CandleListener = void delegate(scope Candle);
 
+class CombinedStreamResponse
+{
+    string stream;
+    Json data;
+}
+
 class BinanceExchange: Exchange
 {
     import vibe.inet.url : URL;
@@ -61,7 +67,7 @@ class BinanceExchange: Exchange
 private:
     immutable string WsEndpoint = "wss://stream.binance.com:9443";
 
-    CandleListener[] _candleListeners;
+    CandleListener[string] _candleListeners;
     WebSocket _currentWebSocket;
 
 public:
@@ -101,8 +107,23 @@ public:
             _currentWebSocket = ws;
 
 			// assert(ws.connected);
-		    while(ws.connected)
-		        info(ws.receiveText());
+		    while(ws.connected) {
+		        auto str = ws.receiveText();
+		        auto resp = deserializeJson!CombinedStreamResponse(str);
+
+                import std.format : formattedRead;
+
+                string pair;
+                string stream;
+                resp.stream.formattedRead!"%s@%s"(pair, stream);
+
+                if (stream == "depth")
+                    if (pair in _candleListeners)
+                        _candleListeners[pair](new Candle());
+
+		        info(str);
+            }
+
 			_currentWebSocket = null;
         });
     }
@@ -112,15 +133,13 @@ public:
         return pair.first.symbol ~ pair.second.symbol;
     }
 
-
     void addCandleListener(TradingPair pair, CandleListener listener)
     {
-        _candleListeners ~= listener;
-
-
-
-        //  <symbol>@kline_<interval>
-        refreshWebSocket([_tradingPairToString(pair) ~ "@depth"]);
+        string pairString = _tradingPairToString(pair);
+        string stream = pairString ~ "@depth"; // <symbol>@kline_<interval>
+        info(pairString);
+        _candleListeners[pairString] = listener;
+        refreshWebSocket([stream]);
     }
 }
 
