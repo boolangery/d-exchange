@@ -1,0 +1,12 @@
+{
+	"name": "binance",
+	"authors": ["Eliott Dumeix"],
+	"description": "Bittrex exchange",
+	"copyright": "Copyright © 2018, Eliott Dumeix",
+	"license": "MIT",
+	"targetType": "library",
+
+	"dependencies": {
+		"exchanges:core": "*"
+	}
+}

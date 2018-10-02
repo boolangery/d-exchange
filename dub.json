@@ -7,10 +7,12 @@
 
 	"subPackages": [
 		"core",
-		"exchanges/bittrex"
+		"exchanges/bittrex",
+		"exchanges/binance"
 	],
 
 	"dependencies": {
-		":bittrex": "*"
+		":bittrex": "*",
+		":binance": "*"
 	}
 }

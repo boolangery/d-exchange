@@ -1,0 +1,21 @@
+{
+	"name": "binance-tests",
+	"description": "Tests for binance exchanges",
+	"targetPath": "bin",
+
+	"configurations": [{
+		"name": "unittest",
+		"targetType": "executable",
+
+		"dependencies": {
+			"exchanges:binance": {"path": "../"},
+			"unit-threaded": "*"
+		},
+
+		"preBuildCommands": ["dub run unit-threaded -c gen_ut_main -- -f bin/ut.d"],
+		"mainSourceFile": "bin/ut.d",
+
+		"subConfigurations": {
+		}
+	}]
+}

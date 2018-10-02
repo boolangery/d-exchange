@@ -173,7 +173,7 @@ class Market {
     };
 }
 
-interface IMarket: IEndpoint {
+interface IMarketEndpoint: IEndpoint {
     Array!Market fetchMarkets();
 }
 
@@ -196,7 +196,7 @@ class OrderBook {
     Array!Order sellOrders;
 }
 
-interface IOrderBook: IEndpoint {
+interface IOrderBookEndpoint: IEndpoint {
     OrderBook fetchOrderBook(string symbol, OrderBookType type);
 }
 

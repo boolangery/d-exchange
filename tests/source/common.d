@@ -4,9 +4,12 @@
     unittest requires exchange api keys to be runned. So you need to
     provide them in a unittest.conf file.
 */
-module crypto.test;
+module common;
 
-import api : Credentials;
+import crypto.api : Credentials;
+
+public import unit_threaded;
+
 /**
     Contains test configuration about an exchange api.
 */
@@ -20,8 +23,9 @@ TestConfiguration[string] getTestConfig() {
     import std.file;
     import std.stdio;
     import std.traits;
-    import api : Exchanges;
     import vibe.data.json;
+
+    import crypto.api : Exchanges;
 
     // if the file doesn't exists, create a stub:
     if (!exists("./unittest.conf")) {
