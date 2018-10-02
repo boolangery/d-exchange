@@ -1,4 +1,4 @@
-module exceptions;
+module crypto.exceptions;
 
 
 /**

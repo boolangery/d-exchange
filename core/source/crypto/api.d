@@ -1,4 +1,4 @@
-module api;
+module crypto.api;
 
 import vibe.http.client;
 import vibe.stream.operations;

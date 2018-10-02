@@ -1,8 +1,0 @@
-{
-	"name": "exchanges",
-	"authors": ["boolangery"],
-	"targetType": "none",
-	"subPackages": [
-		"bittrex"
-	]
-}

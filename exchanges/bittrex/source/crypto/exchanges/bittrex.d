@@ -1,4 +1,4 @@
-module bittrex;
+module crypto.exchanges.bittrex;
 
 import std.conv;
 import std.math;
@@ -9,7 +9,7 @@ import vibe.data.bson;
 import vibe.web.rest;
 import vibe.http.common;
 import url;
-import api;
+import crypto.api;
 
 
 /**

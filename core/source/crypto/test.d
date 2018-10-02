@@ -4,7 +4,7 @@
     unittest requires exchange api keys to be runned. So you need to
     provide them in a unittest.conf file.
 */
-module test;
+module crypto.test;
 
 import api : Credentials;
 /**

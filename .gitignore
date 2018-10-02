@@ -5,3 +5,5 @@ unittest.conf
 crypto-boot.iml
 dub.dsl
 libcrypto-boot.a
+crypto.iml
+libexchanges.a

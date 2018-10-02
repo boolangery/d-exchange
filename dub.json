@@ -1,20 +1,16 @@
 {
-	"name": "crypto",
-	"authors": [
-		"boolangery"
-	],
-	"dependencies": {
-		"urld": "~>2.1.0",
-		"vibe-d": "~>0.8.4"
-	},
-	"targetType": "none",
-	"description": "Crypto exchange api",
-	"copyright": "Copyright © 2017, boolangery",
-	"license": "proprietary",
-	"versions": [
-		"VibeUseOpenSSL11"
-	],
+	"name": "exchanges",
+	"authors": ["Eliott Dumeix"],
+	"description": "Cryptocurrencies exchange API",
+	"license": "MIT",
+	"targetType": "library",
+
 	"subPackages": [
-		"exchanges"
-	]
+		"core",
+		"exchanges/bittrex"
+	],
+
+	"dependencies": {
+		":bittrex": "*"
+	}
 }
