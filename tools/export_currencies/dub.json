@@ -1,0 +1,16 @@
+{
+	"name": "export_currencies",
+	"authors": ["Eliott Dumeix"],
+	"description": "Export currencies to a D enum",
+	"copyright": "Copyright © 2018, Eliott Dumeix",
+	"license": "MIT",
+	"targetType": "executable",
+
+	"dependencies": {
+		"vibe-d": "~>0.8.4"
+	},
+
+	"versions": [
+		"VibeUseOpenSSL11"
+	],
+}

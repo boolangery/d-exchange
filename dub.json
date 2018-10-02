@@ -7,11 +7,13 @@
 
 	"subPackages": [
 		"core",
+		"tools/export_currencies",
 		"exchanges/bittrex",
-		"exchanges/binance"
+		"exchanges/binance",
 	],
 
 	"dependencies": {
+		":export_currencies": "*",
 		":bittrex": "*",
 		":binance": "*"
 	}
