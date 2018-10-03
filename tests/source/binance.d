@@ -14,10 +14,14 @@ import crypto.exchanges.binance;
 unittest {
     Credentials creds;
     auto binance = new BinanceExchange(creds);
+    auto markets = binance.fetchMarkets();
 
+    foreach(market; markets)
+        writelnUt(market.symbol);
 
+    /*
     binance.addCandleListener(TradingPair("bnb", "btc"), (scope candle) {
         writelnUt("CALLED");
-
     });
+    */
 }
