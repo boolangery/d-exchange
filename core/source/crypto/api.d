@@ -8,8 +8,17 @@ import std.container;
 
 public import url : URLD = URL;
 public import crypto.utils;
+public import std.datetime : DateTime;
 
 public enum RateType {PerMilis, PerSecond, PerMinute, PerHour}
+
+class ExchangeException : Exception
+{
+    this(string msg, string file = __FILE__, size_t line = __LINE__)
+    {
+        super(msg, file, line);
+    }
+}
 
 /**
     A class to manage api rate limit.
@@ -202,37 +211,32 @@ interface IMarketEndpoint: IEndpoint {
 
 enum OrderBookType {Buy, Sell, Both}
 
-/**
-    Represent an order.
-*/
-class Order {
-    double quantity;
-    double rate;
+/** Represent an order. */
+struct Order
+{
+    double amount;
+    double price;
 }
 
-/**
-    Represent a generic order book.
-*/
-class OrderBook {
-    OrderBookType type;
-    Array!Order buyOrders;
-    Array!Order sellOrders;
+/** Represent a generic order book. */
+class OrderBook
+{
+    Order[] bids;
+    Order[] asks;
+    long timestamp;
+    DateTime datetime;
 }
 
 interface IOrderBookEndpoint: IEndpoint {
-    OrderBook fetchOrderBook(string symbol, OrderBookType type);
+    OrderBook fetchOrderBook(string symbol);
 }
 
-/**
-    Enumaration of known exchanges.
-*/
+/** Enumaration of known exchanges. */
 public static enum Exchanges {
     Bittrex = "bittrex"
 }
 
-/**
-    Api configuration.
-*/
+/** Api configuration. */
 struct Configuration {
     string id;      // exchange unique id
     string name;    // display name
@@ -258,6 +262,8 @@ private:
 
     Market[string] _markets; /// Markets by unified symbols
     Market[string] _marketsById; /// Markets by exchange id
+    string[] _symbols;
+    string[] _exchangeIds;
 
 public /*properties*/:
     @property auto markets()
@@ -267,6 +273,8 @@ public /*properties*/:
     }
 
     @property auto marketsById() { return _marketsById; }
+    @property auto symbols() { return _symbols; }
+    @property auto exchangeIds() { return _exchangeIds; }
 
 public:
     /// Constructor.
@@ -420,6 +428,8 @@ private:
     {
         _markets = markets.indexBy!"symbol";
         _marketsById = markets.indexBy!"id";
+        _symbols = _markets.keys();
+        _exchangeIds = _marketsById.keys();
         return _markets;
     }
 }

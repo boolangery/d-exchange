@@ -72,7 +72,7 @@ class BinanceError
 }
 
 
-class BinanceExchange: Exchange
+class BinanceExchange: Exchange, IOrderBookEndpoint
 {
     import vibe.inet.url : URL;
     import vibe.http.websockets;
@@ -167,9 +167,9 @@ public:
         Json response = jsonHttpRequest(endpoint, HTTPMethod.GET);
         // if self.options['adjustForTimeDifference']:
         //    self.load_time_difference()
-
         Market[] result;
         auto markets = response["symbols"];
+
         foreach(market; markets) {
             // "123456" is a "test symbol/market"
             if (market["symbol"] == "123456")
@@ -213,49 +213,24 @@ public:
         }
         return result;
     }
+
+    OrderBook fetchOrderBook(string symbol)
+    {
+        enforce!ExchangeException(symbol in markets, "No market symbol " ~ symbol);
+
+        URLD endpoint = BaseUrl;
+        endpoint.path = "/api/v1/depth";
+        endpoint.queryParams.add("symbol", markets[symbol].id);
+
+        OrderBook result = new OrderBook();
+        Json response = jsonHttpRequest(endpoint, HTTPMethod.GET);
+
+        foreach(bid; response["bids"])
+            result.bids ~= Order(bid[1].get!string().to!double(), bid[0].get!string().to!double());
+
+        foreach(ask; response["asks"])
+            result.asks ~= Order(ask[1].get!string().to!double(), ask[0].get!string().to!double());
+
+        return result;
+    }
 }
-
-
-
-
-
-
-
-
-
-/*
-
-    mixin generateTradingPairs!([Coin.Bitcoin, Coin.Monero]);
-
-    private mixin template generateTradingPairs(Coin[] coins)
-    {
-        import std.traits;
-        import std.uni : toUpper;
-        import std.format;
-        import std.conv : to;
-        import std.array;
-
-        enum sanitizeChars = [
-            "$": "D",
-            "@": "At",
-        ];
-
-        static foreach(first; coins) {
-            static foreach(second; [EnumMembers!Coin]) {
-				mixin(q{
-					static immutable TradingPair %s_%s = TradingPair(Coin.%s, Coin.%s);
- 				}.format(sanitizeIdentifier(first.toUpper, sanitizeChars), sanitizeIdentifier(second.toUpper, sanitizeChars), to!string(first), to!string(second)));
-            }
-        }
-    }
-
-    private static string sanitizeIdentifier(string id, string[string] delimiters)
-    {
-        import std.array : replace;
-
-        foreach(to, from; delimiters)
-            id = id.replace(to, from);
-
-        return id;
-    }
-    */
