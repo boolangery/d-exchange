@@ -8,7 +8,7 @@
 
 	"dependencies": {
 		"urld": "~>2.1.1",
-		"vibe-d": "~>0.8.4"
+		"vibe-d:http": "~>0.8.4"
 	},
 
 	"versions": [

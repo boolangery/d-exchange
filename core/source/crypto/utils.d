@@ -18,6 +18,20 @@ Json[T] indexBy(T = string)(Json array, string field)
     return result;
 }
 
+/** Transform an array to an associative array by indexing the initial array
+using the specified field inside the object array. */
+auto indexBy(string field, T)(T[] array) if (__traits(hasMember, T, field))
+{
+    alias KeyType = typeof(__traits(getMember, T, field));
+
+    T[KeyType] aa;
+
+    foreach(obj; array)
+        aa[__traits(getMember, obj, field)] = obj;
+
+    return aa;
+}
+
 /// Json get extension to do a safe get.
 T safeGet(T)(Json json, T defaultValue = T.init)
 {

@@ -6,7 +6,6 @@ import std.string;
 import std.container;
 import vibe.data.json;
 import vibe.data.bson;
-import vibe.web.rest;
 import vibe.http.common;
 import url;
 import crypto.api;

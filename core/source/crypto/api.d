@@ -242,7 +242,10 @@ struct Configuration {
     bool substituteCommonCurrencyCodes = true;
 }
 
-abstract class Exchange {
+/** Base class for implementing a new exchange.
+*/
+abstract class Exchange
+{
     import vibe.data.json;
 
 protected:
@@ -253,12 +256,22 @@ private:
     Configuration _configuration;
     RateLimitManager _rateManager;
 
-    Market[string] _markets;
-    Market[string] _marketsById;
+    Market[string] _markets; /// Markets by unified symbols
+    Market[string] _marketsById; /// Markets by exchange id
+
+public /*properties*/:
+    @property auto markets()
+    {
+        loadMarkets();
+        return _markets;
+    }
+
+    @property auto marketsById() { return _marketsById; }
 
 public:
     /// Constructor.
-    this(Credentials credential) {
+    this(Credentials credential)
+    {
         _credentials = credential;
         this.configure(this._configuration);
         _rateManager = new RateLimitManager(_configuration.rateLimitType, _configuration.rateLimit);
@@ -280,14 +293,11 @@ public:
 
     Market[string] loadMarkets(bool reload=false)
     {
-    /*
         if (!reload) {
             if (!_markets.empty) {
-                if (_marketsById.empty)
-                    return _setMarkets(_markets);
                 return _markets;
             }
-        }*/
+        }
 
         auto markets = fetchMarkets();
         // _currencies.clear();
@@ -408,6 +418,8 @@ private:
     /// Load markets in cache.
     Market[string] _setMarkets(Market[] markets)
     {
-        return null;
+        _markets = markets.indexBy!"symbol";
+        _marketsById = markets.indexBy!"id";
+        return _markets;
     }
 }
