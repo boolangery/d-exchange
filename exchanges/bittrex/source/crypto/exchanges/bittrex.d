@@ -98,7 +98,7 @@ class BittrexOrderBookBoth: IGenericResponse!OrderBook {
 }
 
 
-class BittrexExchange: Exchange, IMarketEndpoint, IOrderBookEndpoint {
+class BittrexExchange: Exchange, IMarketEndpoint, IMarketDataEndpoint {
     private string _baseUrl = "https://bittrex.com/api/v1.1/public/";
 
     this(Credentials credentials) {

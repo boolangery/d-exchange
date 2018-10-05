@@ -115,55 +115,48 @@ class CacheManager {
     }
 }
 
-interface IGenericResponse(T) {
+interface IGenericResponse(T)
+{
     T toGeneric();
 }
 
-/**
-    Represent a min/max range.
-*/
-struct Range {
+/** Represent a min/max range.*/
+struct Range
+{
     double min;
     double max;
 }
 
-
-/**
-    Represent market limits.
-*/
-struct Limits {
+/** Market limits. */
+struct Limits
+{
     Range amount;
     Range price;
     Range cost;
 }
 
-/**
-    Represent a market precision.
-*/
-struct Precision {
+/** Market precision. */
+struct Precision
+{
     int base;
     int quote;
     int amount;
     int price;
 }
 
-/**
-    Represent api credentials.
-*/
-struct Credentials {
+/** API credentials. */
+struct Credentials
+{
     string apiKey;
     string secretApiKey;
 }
 
-/**
-    Generic api endpoint.
-*/
+/** Generic api endpoint. */
 interface IEndpoint {}
 
-/**
-    Represent a generic market.
-*/
-class Market {
+/** Represent a generic market. */
+class Market
+{
     /** The string or numeric ID of the market or trade instrument within the exchange.
     Market ids are used inside exchanges internally to identify trading pairs during the
     request/response process. */
@@ -206,12 +199,6 @@ class Market {
     Json info;
 }
 
-interface IMarketEndpoint: IEndpoint {
-    Array!Market fetchMarkets();
-}
-
-enum OrderBookType {Buy, Sell, Both}
-
 /** Represent an order. */
 struct Order
 {
@@ -228,17 +215,52 @@ class OrderBook
     DateTime datetime;
 }
 
-interface IOrderBookEndpoint: IEndpoint {
+interface IMarketEndpoint: IEndpoint
+{
+    Array!Market fetchMarkets();
+}
+
+interface IMarketDataEndpoint: IEndpoint
+{
     OrderBook fetchOrderBook(string symbol, int limit);
+    PriceTicker fetchTicker(string symbol);
 }
 
 /** Enumaration of known exchanges. */
-public static enum Exchanges {
+static enum Exchanges
+{
     Bittrex = "bittrex"
 }
 
+/** A price ticker contains statistics for a particular market/symbol for
+some period of time in recent past, usually last 24 hours. */
+class PriceTicker
+{
+    string symbol;      /// symbol of the market ('BTC/USD', 'ETH/BTC', ...)
+    Json info;          /// raw exchange json
+    long timestamp;     /// (64-bit Unix Timestamp in milliseconds since Epoch 1 Jan 1970)
+    DateTime datetime;  /// ISO8601 datetime string with milliseconds
+    float high;         /// highest price
+    float low;          /// lowest price
+    float bid;          /// current best bid (buy) price
+    float bidVolume;    /// current best bid (buy) amount (may be missing or undefined)
+    float ask;          /// current best ask (sell) price
+    float askVolume;    /// current best ask (sell) amount (may be missing or undefined)
+    float vwap;         /// volume weighed average price
+    float open;         /// opening price
+    float close;        /// price of last trade (closing price for current period)
+    float last;         /// same as `close`, duplicated for convenience
+    float previousClose;/// closing price for the previous period
+    float change;       /// absolute change, `last - open`
+    float percentage;   /// relative change, `(change/open) * 100`
+    float average;      /// average price, `(last + open) / 2`
+    float baseVolume;   /// volume of base currency traded for last 24 hours
+    float quoteVolume;  /// volume of quote currency traded for last 24 hours
+}
+
 /** Api configuration. */
-struct Configuration {
+struct Configuration
+{
     string id;      // exchange unique id
     string name;    // display name
     string ver;     // api version
@@ -421,6 +443,12 @@ protected:
             return cast(int) parts[1].length;
         else
             return 0;
+    }
+
+    /// Ensure symbol existance is a generic cay.
+    void enforceSymbol(string symbol)
+    {
+        enforce!ExchangeException(symbol in markets, "No market symbol " ~ symbol);
     }
 
 private:

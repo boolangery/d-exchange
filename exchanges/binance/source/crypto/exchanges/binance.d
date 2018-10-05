@@ -72,7 +72,7 @@ class BinanceError
 }
 
 
-class BinanceExchange: Exchange, IOrderBookEndpoint
+class BinanceExchange: Exchange, IMarketDataEndpoint
 {
     import vibe.inet.url : URL;
     import vibe.http.websockets;
@@ -100,6 +100,15 @@ private:
     URLD BaseUrl = parseURL("https://api.binance.com");
     CandleListener[string] _candleListeners;
     WebSocket _currentWebSocket;
+
+protected:
+    DateTime _timestampToDateTime(long ts)
+    {
+        import std.datetime.systime : unixTimeToStdTime;
+        import std.datetime : SysTime;
+
+        return cast(DateTime) SysTime(unixTimeToStdTime(ts / 1000));
+    }
 
 public:
     this(Credentials credential)
@@ -228,24 +237,61 @@ public:
         return result;
     }
 
+
+
     OrderBook fetchOrderBook(string symbol, int limit=100)
     {
-        enforce!ExchangeException(symbol in markets, "No market symbol " ~ symbol);
+        enforceSymbol(symbol);
         enforce!ExchangeException(limit in DepthValidLimitByWeight, "Not a valid exchange limit " ~ limit.to!string);
 
         URLD endpoint = BaseUrl;
         endpoint.path = "/api/v1/depth";
         endpoint.queryParams.add("symbol", markets[symbol].id);
         endpoint.queryParams.add("limit", limit.to!string);
-
-        OrderBook result = new OrderBook();
         Json response = jsonHttpRequest(endpoint, HTTPMethod.GET);
 
+        OrderBook result = new OrderBook();
         foreach(bid; response["bids"])
             result.bids ~= Order(bid[1].get!string().to!double(), bid[0].get!string().to!double());
 
         foreach(ask; response["asks"])
             result.asks ~= Order(ask[1].get!string().to!double(), ask[0].get!string().to!double());
+
+        return result;
+    }
+
+    PriceTicker fetchTicker(string symbol)
+    {
+        enforceSymbol(symbol);
+
+        URLD endpoint = BaseUrl;
+        endpoint.path = "/api/v1/ticker/24hr";
+        endpoint.queryParams.add("symbol", markets[symbol].id);
+        Json response = jsonHttpRequest(endpoint, HTTPMethod.GET);
+
+        PriceTicker result = new PriceTicker();
+        auto last = response["lastPrice"].safeGetStr!float();
+
+        result.symbol = symbol;
+        result.info = response;
+        result.timestamp = response["closeTime"].safeGet!long;
+        result.datetime = _timestampToDateTime(result.timestamp);
+        result.high = response["highPrice"].safeGetStr!float();
+        result.low = response["lowPrice"].safeGetStr!float();
+        result.bid = response["bidPrice"].safeGetStr!float();
+        result.bidVolume = response["bidQty"].safeGetStr!float();
+        result.ask = response["askPrice"].safeGetStr!float();
+        result.askVolume = response["askQty"].safeGetStr!float();
+        result.vwap = response["weightedAvgPrice"].safeGetStr!float();
+        result.open = response["openPrice"].safeGetStr!float();
+        result.close = last;
+        result.last = last;
+        result.previousClose = response["prevClosePrice"].safeGetStr!float();
+        result.change = response["priceChange"].safeGetStr!float();
+        result.percentage = response["priceChangePercent"].safeGetStr!float();
+        result.average = 0;
+        result.baseVolume = response["volume"].safeGetStr!float();
+        result.quoteVolume = response["quoteVolume"].safeGetStr!float();
 
         return result;
     }
