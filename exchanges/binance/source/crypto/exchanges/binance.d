@@ -72,7 +72,7 @@ class BinanceError
 }
 
 
-class BinanceExchange: Exchange, IMarketDataEndpoint
+class BinanceExchange: Exchange
 {
     import vibe.inet.url : URL;
     import vibe.http.websockets;
@@ -237,9 +237,7 @@ public:
         return result;
     }
 
-
-
-    OrderBook fetchOrderBook(string symbol, int limit=100)
+    override OrderBook fetchOrderBook(string symbol, int limit=100)
     {
         enforceSymbol(symbol);
         enforce!ExchangeException(limit in DepthValidLimitByWeight, "Not a valid exchange limit " ~ limit.to!string);
@@ -260,7 +258,7 @@ public:
         return result;
     }
 
-    PriceTicker fetchTicker(string symbol)
+    override PriceTicker fetchTicker(string symbol)
     {
         enforceSymbol(symbol);
 

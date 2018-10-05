@@ -151,9 +151,6 @@ struct Credentials
     string secretApiKey;
 }
 
-/** Generic api endpoint. */
-interface IEndpoint {}
-
 /** Represent a generic market. */
 class Market
 {
@@ -213,17 +210,6 @@ class OrderBook
     Order[] asks;
     long timestamp;
     DateTime datetime;
-}
-
-interface IMarketEndpoint: IEndpoint
-{
-    Array!Market fetchMarkets();
-}
-
-interface IMarketDataEndpoint: IEndpoint
-{
-    OrderBook fetchOrderBook(string symbol, int limit);
-    PriceTicker fetchTicker(string symbol);
 }
 
 /** Enumaration of known exchanges. */
@@ -299,28 +285,27 @@ public /*properties*/:
     @property auto symbols() { return _symbols; }
     @property auto exchangeIds() { return _exchangeIds; }
 
+    immutable bool hasFetchMarkets;
+    immutable bool hasFetchOrderBook;
+    immutable bool hasFetchTicker;
+
 public:
     /// Constructor.
-    this(Credentials credential)
+    this(this T)(Credentials credential)
     {
+        hasFetchMarkets = __traits(isOverrideFunction, T.fetchMarkets);
+        hasFetchOrderBook = __traits(isOverrideFunction, T.fetchOrderBook);
+        hasFetchTicker = __traits(isOverrideFunction, T.fetchTicker);
+
         _credentials = credential;
         this.configure(this._configuration);
         _rateManager = new RateLimitManager(_configuration.rateLimitType, _configuration.rateLimit);
         _cache = new CacheManager(_rateManager);
     }
 
-    /** Check if the api implements the endpoint.
-    Exemple: bittrex.hasEndpoint!IFetchMarket() */
-    T hasEndpoint(T: IEndpoint)() {
-        return (cast(T) this != null);
-    }
-
-    /// Cast the api in the type of the requested endpoint.
-    T asEndpoint(T: IEndpoint)() {
-        return (cast(T) this);
-    }
-
     abstract Market[] fetchMarkets();
+    OrderBook fetchOrderBook(string symbol, int limit) { return null; }
+    PriceTicker fetchTicker(string symbol) { return null; }
 
     Market[string] loadMarkets(bool reload=false)
     {
