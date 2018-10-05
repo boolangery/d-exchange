@@ -78,12 +78,26 @@ class BinanceExchange: Exchange, IOrderBookEndpoint
     import vibe.http.websockets;
     import std.math : pow, log10;
 
-private:
+private /*constants*/:
     immutable string BaseEndpoint = "https://api.binance.com";
     immutable string WsEndpoint = "wss://stream.binance.com:9443";
+    static immutable int[int] DepthValidLimitByWeight;
 
+    static this()
+    {
+        DepthValidLimitByWeight = [
+            5: 1,
+            10: 1,
+            20: 1,
+            50: 1,
+            100: 1,
+            500: 5,
+            1000: 10
+        ];
+    }
+
+private:
     URLD BaseUrl = parseURL("https://api.binance.com");
-
     CandleListener[string] _candleListeners;
     WebSocket _currentWebSocket;
 
@@ -214,13 +228,15 @@ public:
         return result;
     }
 
-    OrderBook fetchOrderBook(string symbol)
+    OrderBook fetchOrderBook(string symbol, int limit=100)
     {
         enforce!ExchangeException(symbol in markets, "No market symbol " ~ symbol);
+        enforce!ExchangeException(limit in DepthValidLimitByWeight, "Not a valid exchange limit " ~ limit.to!string);
 
         URLD endpoint = BaseUrl;
         endpoint.path = "/api/v1/depth";
         endpoint.queryParams.add("symbol", markets[symbol].id);
+        endpoint.queryParams.add("limit", limit.to!string);
 
         OrderBook result = new OrderBook();
         Json response = jsonHttpRequest(endpoint, HTTPMethod.GET);

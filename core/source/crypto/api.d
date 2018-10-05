@@ -8,6 +8,7 @@ import std.container;
 
 public import url : URLD = URL;
 public import crypto.utils;
+public import std.algorithm: canFind;
 public import std.datetime : DateTime;
 
 public enum RateType {PerMilis, PerSecond, PerMinute, PerHour}
@@ -228,7 +229,7 @@ class OrderBook
 }
 
 interface IOrderBookEndpoint: IEndpoint {
-    OrderBook fetchOrderBook(string symbol);
+    OrderBook fetchOrderBook(string symbol, int limit);
 }
 
 /** Enumaration of known exchanges. */
