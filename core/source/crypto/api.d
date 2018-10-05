@@ -244,6 +244,39 @@ class PriceTicker
     float quoteVolume;  /// volume of quote currency traded for last 24 hours
 }
 
+/// OHLCV data.
+class Candlestick
+{
+public:
+    long timestamp; /// UTC timestamp in milliseconds, integer
+    float open;     /// (O)pen price, float
+    float high;     /// (H)ighest price, float
+    float low;      /// (L)owest price, float
+    float close;    /// (C)losing price, float
+    float volume;   /// (V)olume (in terms of the base currency), float
+
+    bool isIncreasing()
+    {
+        return close > open;
+    }
+
+    bool isDecreasing()
+    {
+        return close < open;
+    }
+}
+
+/// Candlestick time interval.
+enum CandlestickInterval
+{
+    _1m,    _3m,    _5m,    _15m,
+    _30m,   _1h,    _2h,    _4h,
+    _6h,    _8h,    _12h,   _1d,
+    _3d,    _1w,    _1M
+}
+
+
+
 /** Api configuration. */
 struct Configuration
 {
@@ -285,17 +318,17 @@ public /*properties*/:
     @property auto symbols() { return _symbols; }
     @property auto exchangeIds() { return _exchangeIds; }
 
-    immutable bool hasFetchMarkets;
     immutable bool hasFetchOrderBook;
     immutable bool hasFetchTicker;
+    immutable bool hasFetchOhlcv;
 
 public:
     /// Constructor.
     this(this T)(Credentials credential)
     {
-        hasFetchMarkets = __traits(isOverrideFunction, T.fetchMarkets);
         hasFetchOrderBook = __traits(isOverrideFunction, T.fetchOrderBook);
         hasFetchTicker = __traits(isOverrideFunction, T.fetchTicker);
+        hasFetchOhlcv = __traits(isOverrideFunction, T.fetchTicker);
 
         _credentials = credential;
         this.configure(this._configuration);
@@ -303,9 +336,17 @@ public:
         _cache = new CacheManager(_rateManager);
     }
 
+    /// Retrieve market informations.
     abstract Market[] fetchMarkets();
-    OrderBook fetchOrderBook(string symbol, int limit) { return null; }
-    PriceTicker fetchTicker(string symbol) { return null; }
+
+    /// Fetch order book. Supported if hasFetchMarkets is true.
+    OrderBook fetchOrderBook(string symbol, int limit) { throw new ExchangeException("not supported"); }
+
+    /// Fetch 24h ticker. Supported if hasFetchTicker is true.
+    PriceTicker fetchTicker(string symbol) { throw new ExchangeException("not supported"); }
+
+    // Fetch OHLCV data.
+    Candlestick[] fetchOhlcv(string symbol, CandlestickInterval interval, int limit) { throw new ExchangeException("not supported"); }
 
     Market[string] loadMarkets(bool reload=false)
     {
@@ -434,6 +475,27 @@ protected:
     void enforceSymbol(string symbol)
     {
         enforce!ExchangeException(symbol in markets, "No market symbol " ~ symbol);
+    }
+
+    string _candlestickIntervalToStr(CandlestickInterval interval)
+    {
+        final switch (interval) {
+            case CandlestickInterval._1m:   return "1m";
+            case CandlestickInterval._3m:   return "3m";
+            case CandlestickInterval._5m:   return "5m";
+            case CandlestickInterval._15m:  return "15m";
+            case CandlestickInterval._30m:  return "30m";
+            case CandlestickInterval._1h:   return "1h";
+            case CandlestickInterval._2h:   return "2h";
+            case CandlestickInterval._4h:   return "4h";
+            case CandlestickInterval._6h:   return "6h";
+            case CandlestickInterval._8h:   return "8h";
+            case CandlestickInterval._12h:  return "12h";
+            case CandlestickInterval._1d:   return "1d";
+            case CandlestickInterval._3d:   return "3d";
+            case CandlestickInterval._1w:   return "1w";
+            case CandlestickInterval._1M:   return "1M";
+        }
     }
 
 private:

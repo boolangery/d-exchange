@@ -12,6 +12,7 @@ import crypto.api;
 import std.experimental.logger;
 
 public import crypto.coins;
+public import crypto.api : CandlestickInterval;
 
 struct TradingPair
 {
@@ -31,26 +32,7 @@ struct TradingPair
     }
 }
 
-class Candle
-{
-public:
-    double high;
-    double low;
-    double open;
-    double close;
-
-    bool isIncreasing()
-    {
-        return close > open;
-    }
-
-    bool isDecreasing()
-    {
-        return close < open;
-    }
-}
-
-alias CandleListener = void delegate(scope Candle);
+alias CandleListener = void delegate(scope Candlestick);
 
 class CombinedStreamResponse
 {
@@ -85,6 +67,7 @@ private /*constants*/:
 
     static this()
     {
+
         DepthValidLimitByWeight = [
             5: 1,
             10: 1,
@@ -159,7 +142,7 @@ public:
 
                 if (stream == "depth")
                     if (pair in _candleListeners)
-                        _candleListeners[pair](new Candle());
+                        _candleListeners[pair](new Candlestick());
 
 		        info(str);
             }
@@ -291,6 +274,33 @@ public:
         result.baseVolume = response["volume"].safeGetStr!float();
         result.quoteVolume = response["quoteVolume"].safeGetStr!float();
 
+        return result;
+    }
+
+    override Candlestick[] fetchOhlcv(string symbol, CandlestickInterval interval, int limit=500)
+    {
+        enforceSymbol(symbol);
+        loadMarkets();
+
+        URLD endpoint = BaseUrl;
+        endpoint.path = "/api/v1/klines";
+        endpoint.queryParams.add("symbol", markets[symbol].id);
+        endpoint.queryParams.add("interval", _candlestickIntervalToStr(interval));
+        endpoint.queryParams.add("limit", limit.to!string);
+        Json response = jsonHttpRequest(endpoint, HTTPMethod.GET);
+        Candlestick[] result;
+
+        foreach(candle; response) {
+            Candlestick entry = new Candlestick();
+            entry.timestamp = candle[0].get!long;
+            entry.open   = candle[1].safeGetStr!float();
+            entry.high   = candle[2].safeGetStr!float();
+            entry.low    = candle[3].safeGetStr!float();
+            entry.close  = candle[4].safeGetStr!float();
+            entry.volume = candle[5].safeGetStr!float();
+
+            result ~= entry;
+        }
         return result;
     }
 }

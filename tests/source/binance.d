@@ -14,10 +14,13 @@ import crypto.exchanges.binance;
 unittest {
     Credentials creds;
     auto binance = new BinanceExchange(creds);
-    auto markets = binance.fetchMarkets();
+    // auto markets = binance.fetchMarkets();
 
-    foreach(market; markets)
-        writelnUt(market.symbol);
+    if (binance.hasFetchOhlcv) {
+        auto t = binance.fetchOhlcv("LTC/BTC", CandlestickInterval._1M, 100);
+        foreach(candle; t)
+            writelnUt(candle.timestamp);
+    }
 
     /*
     binance.addCandleListener(TradingPair("bnb", "btc"), (scope candle) {
