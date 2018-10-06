@@ -1,8 +1,8 @@
 module crypto.utils;
 
 
-import vibe.data.json : Json;
-import std.conv : to;
+public import vibe.data.json : Json;
+public import std.conv : to;
 
 /// Take an Json array of object, and return an associative array
 /// indexed by an object field.

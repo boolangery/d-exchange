@@ -10,6 +10,8 @@ public import url : URLD = URL;
 public import crypto.utils;
 public import std.algorithm: canFind;
 public import std.datetime : DateTime;
+public import std.range.primitives : empty;
+public import std.exception : enforce;
 
 public enum RateType {PerMilis, PerSecond, PerMinute, PerHour}
 
@@ -21,10 +23,9 @@ class ExchangeException : Exception
     }
 }
 
-/**
-    A class to manage api rate limit.
-*/
-class RateLimitManager {
+/** A class to manage api rate limit. */
+class RateLimitManager
+{
     import std.datetime;
 
     private RateType _type;
@@ -90,9 +91,7 @@ class RateLimitManager {
     }
 }
 
-/**
-    A class to manage api cache.
-*/
+/** A class to manage api cache. */
 class CacheManager {
     private Object[string] _cache;
     private RateLimitManager _manager;
@@ -120,7 +119,7 @@ interface IGenericResponse(T)
     T toGeneric();
 }
 
-/** Represent a min/max range.*/
+/** Represent a min/max range. */
 struct Range
 {
     double min;
@@ -275,22 +274,68 @@ enum CandlestickInterval
     _3d,    _1w,    _1M
 }
 
+enum OrderType { market, limit }
 
+enum TradeDirection { buy, sell }
+
+/// Trade infos.
+class Trade
+{
+     Json info;           /// the original decoded JSON as is
+     string id;           /// string trade id
+     long timestamp;      /// Unix timestamp in milliseconds
+     DateTime datetime;   /// ISO8601 datetime with milliseconds
+     string symbol;       /// symbol
+     string order;        /// string order id or undefined/None/null
+     OrderType type;      /// order type, 'market', 'limit' or undefined/None/null
+     TradeDirection side; /// direction of the trade, 'buy' or 'sell'
+     float price;         /// float price in quote currency
+     float amount;        /// amount of base currency
+}
 
 /** Api configuration. */
 struct Configuration
 {
-    string id;      // exchange unique id
-    string name;    // display name
-    string ver;     // api version
-    int rateLimit = 36000;  // number or request per rateLimitType
-    RateType rateLimitType; // rate limit type, limit per second, minute, hour..
+    string id;      /// exchange unique id
+    string name;    /// display name
+    string ver;     /// api version
+    int rateLimit = 36000;  /// number or request per rateLimitType
+    RateType rateLimitType; /// rate limit type, limit per second, minute, hour..
     bool substituteCommonCurrencyCodes = true;
+}
+
+interface IExchange
+{
+    @property Market[string] markets();
+    @property Market[string] marketsById();
+    @property string[] symbols();
+    @property string[] exchangeIds();
+    @property bool hasFetchOrderBook();
+    @property bool hasFetchTicker();
+    @property bool hasFetchOhlcv();
+    @property bool hasFetchTrades();
+
+    /// Fetch market informations.
+    Market[] fetchMarkets();
+
+    /// Fetch order book. Supported if hasFetchMarkets is true.
+    OrderBook fetchOrderBook(string symbol, int limit);
+
+    /// Fetch 24h ticker. Supported if hasFetchTicker is true.
+    PriceTicker fetchTicker(string symbol);
+
+    /// Fetch OHLCV data.
+    Candlestick[] fetchOhlcv(string symbol, CandlestickInterval interval, int limit);
+
+    Market[string] loadMarkets(bool reload=false);
+
+    /// Fetch trade informations.
+    Trade[] fetchTrades(string symbol, int limit);
 }
 
 /** Base class for implementing a new exchange.
 */
-abstract class Exchange
+abstract class Exchange : IExchange
 {
     import vibe.data.json;
 
@@ -306,29 +351,29 @@ private:
     Market[string] _marketsById; /// Markets by exchange id
     string[] _symbols;
     string[] _exchangeIds;
+    immutable bool _hasFetchOrderBook;
+    immutable bool _hasFetchTicker;
+    immutable bool _hasFetchOhlcv;
+    immutable bool _hasFetchTrades;
 
 public /*properties*/:
-    @property auto markets()
-    {
-        loadMarkets();
-        return _markets;
-    }
-
-    @property auto marketsById() { return _marketsById; }
-    @property auto symbols() { return _symbols; }
-    @property auto exchangeIds() { return _exchangeIds; }
-
-    immutable bool hasFetchOrderBook;
-    immutable bool hasFetchTicker;
-    immutable bool hasFetchOhlcv;
+    @property Market[string] markets() { loadMarkets(); return _markets; }
+    @property Market[string] marketsById() { return _marketsById; }
+    @property string[] symbols() { return _symbols; }
+    @property string[] exchangeIds() { return _exchangeIds; }
+    @property bool hasFetchOrderBook() { return _hasFetchOrderBook; }
+    @property bool hasFetchTicker() { return _hasFetchTicker; }
+    @property bool hasFetchOhlcv() { return _hasFetchOhlcv; }
+    @property bool hasFetchTrades() { return _hasFetchTrades; }
 
 public:
     /// Constructor.
     this(this T)(Credentials credential)
     {
-        hasFetchOrderBook = __traits(isOverrideFunction, T.fetchOrderBook);
-        hasFetchTicker = __traits(isOverrideFunction, T.fetchTicker);
-        hasFetchOhlcv = __traits(isOverrideFunction, T.fetchTicker);
+        _hasFetchOrderBook = __traits(isOverrideFunction, T.fetchOrderBook);
+        _hasFetchTicker = __traits(isOverrideFunction, T.fetchTicker);
+        _hasFetchOhlcv = __traits(isOverrideFunction, T.fetchTicker);
+        _hasFetchTrades = __traits(isOverrideFunction, T.fetchTrades);
 
         _credentials = credential;
         this.configure(this._configuration);
@@ -347,6 +392,8 @@ public:
 
     // Fetch OHLCV data.
     Candlestick[] fetchOhlcv(string symbol, CandlestickInterval interval, int limit) { throw new ExchangeException("not supported"); }
+
+    Trade[] fetchTrades(string symbol, int limit) { throw new ExchangeException("not supported"); }
 
     Market[string] loadMarkets(bool reload=false)
     {
