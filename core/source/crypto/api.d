@@ -435,17 +435,17 @@ protected:
         logDebug(url.toString());
 
         requestHTTP(url.toString(),
-	        (scope HTTPClientRequest req) {
-		        req.method = method;
-		        foreach (header; headers.keys)
+            (scope HTTPClientRequest req) {
+                req.method = method;
+                foreach (header; headers.keys)
                     req.headers[header] = headers[header];
-	        },
-	        (scope HTTPClientResponse res) {
-	            string jsonString = res.bodyReader.readAllUTF8();
-	            data = parseJson(jsonString);
-	        }
-	    );
-	    return data;
+            },
+            (scope HTTPClientResponse res) {
+                string jsonString = res.bodyReader.readAllUTF8();
+                data = parseJson(jsonString);
+            }
+        );
+        return data;
     }
 
     /** Performs a synchronous HTTP request on the specified URL,
@@ -460,18 +460,18 @@ protected:
         logDebug(url.toString());
 
         requestHTTP(url.toString(),
-	        (scope HTTPClientRequest req) {
-		        req.method = method;
-		        foreach (header; headers.keys)
+            (scope HTTPClientRequest req) {
+                req.method = method;
+                foreach (header; headers.keys)
                     req.headers[header] = headers[header];
-		        // req.writeJsonBody(["name": "My Name"]);
-	        },
-	        (scope HTTPClientResponse res) {
-	            string json = res.bodyReader.readAllUTF8();
-	            data = deserializeJson!T(json);
-	        }
-	    );
-	    return data;
+                // req.writeJsonBody(["name": "My Name"]);
+            },
+            (scope HTTPClientResponse res) {
+                string json = res.bodyReader.readAllUTF8();
+                data = deserializeJson!T(json);
+            }
+        );
+        return data;
     }
 
     /** Performs a synchronous HTTP request on the specified URL,

@@ -129,10 +129,10 @@ public:
         connectWebSocket(URL(url), (scope WebSocket ws) {
             _currentWebSocket = ws;
 
-			// assert(ws.connected);
-		    while(ws.connected) {
-		        auto str = ws.receiveText();
-		        auto resp = deserializeJson!CombinedStreamResponse(str);
+            // assert(ws.connected);
+            while(ws.connected) {
+                auto str = ws.receiveText();
+                auto resp = deserializeJson!CombinedStreamResponse(str);
 
                 import std.format : formattedRead;
 
@@ -144,10 +144,10 @@ public:
                     if (pair in _candleListeners)
                         _candleListeners[pair](new Candlestick());
 
-		        info(str);
+                info(str);
             }
 
-			_currentWebSocket = null;
+            _currentWebSocket = null;
         });
     }
 
