@@ -303,4 +303,38 @@ public:
         }
         return result;
     }
+
+    override Trade[] fetchTrades(string symbol, int limit=500)
+    {
+        enforceSymbol(symbol);
+
+        URLD endpoint = BaseUrl;
+        endpoint.path = "/api/v1/aggTrades";
+        // TODO: add startTime, endTime, fromId
+        endpoint.queryParams.add("symbol", markets[symbol].id);
+        endpoint.queryParams.add("limit", limit.to!string);
+        Json response = jsonHttpRequest(endpoint, HTTPMethod.GET);
+
+        Trade[] result;
+        foreach(trade; response) {
+            Trade entry = new Trade();
+            entry.info = trade;
+            entry.id = trade["a"].get!long.to!string;
+            entry.timestamp = trade["T"].get!long;
+            entry.datetime = _timestampToDateTime(entry.timestamp);
+            entry.symbol = symbol;
+            entry.order = null;
+            entry.type = OrderType.undefined;
+            if (trade["m"].get!bool)
+                entry.side = TradeDirection.sell;
+            else
+                entry.side = TradeDirection.buy;
+            entry.price = trade["p"].safeGetStr!float();
+            entry.amount = trade["q"].safeGetStr!float();
+            result ~= entry;
+        }
+
+        return result;
+    }
+
 }

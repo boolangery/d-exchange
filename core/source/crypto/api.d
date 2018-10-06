@@ -13,6 +13,11 @@ public import std.datetime : DateTime;
 public import std.range.primitives : empty;
 public import std.exception : enforce;
 
+enum Exchanges
+{
+    bittrex = "bittrex"
+}
+
 public enum RateType {perMilis, perSecond, perMinute, perHour}
 
 class ExchangeException : Exception
@@ -268,7 +273,7 @@ enum CandlestickInterval
     _3d,    _1w,    _1M
 }
 
-enum OrderType { market, limit }
+enum OrderType { undefined, market, limit }
 
 enum TradeDirection { buy, sell }
 
