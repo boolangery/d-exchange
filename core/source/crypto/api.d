@@ -13,7 +13,7 @@ public import std.datetime : DateTime;
 public import std.range.primitives : empty;
 public import std.exception : enforce;
 
-public enum RateType {PerMilis, PerSecond, PerMinute, PerHour}
+public enum RateType {perMilis, perSecond, perMinute, perHour}
 
 class ExchangeException : Exception
 {
@@ -36,19 +36,19 @@ class RateLimitManager
         _type = type;
         final switch (type)
         {
-            case RateType.PerMilis:
+            case RateType.perMilis:
                 _rate = dur!"msecs"(1) / rateLimit;
                 break;
 
-            case RateType.PerSecond:
+            case RateType.perSecond:
                 _rate = dur!"seconds"(1) / rateLimit;
                 break;
 
-            case RateType.PerMinute:
+            case RateType.perMinute:
                 _rate = dur!"minutes"(1) / rateLimit;
                 break;
 
-            case RateType.PerHour:
+            case RateType.perHour:
                 _rate = dur!"hours"(1) / rateLimit;
                 break;
         }
@@ -71,7 +71,7 @@ class RateLimitManager
     unittest {
         import core.thread: Thread;
 
-        auto rmm = new RateLimitManager(RateType.PerMilis, 4);
+        auto rmm = new RateLimitManager(RateType.perMilis, 4);
         rmm.addRequest();
         Thread.sleep(dur!("usecs")(250));
         assert(!rmm.isLimitExceeded());
@@ -209,12 +209,6 @@ class OrderBook
     Order[] asks;
     long timestamp;
     DateTime datetime;
-}
-
-/** Enumaration of known exchanges. */
-static enum Exchanges
-{
-    Bittrex = "bittrex"
 }
 
 /** A price ticker contains statistics for a particular market/symbol for
