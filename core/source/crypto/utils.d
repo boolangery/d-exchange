@@ -56,3 +56,11 @@ T safeTo(T, V)(V valueToConv, T defaultValue)
     scope(failure) return defaultValue;
     return defaultValue;
 }
+
+long getMillisTimestamp()
+{
+    import std.datetime.systime : Clock;
+
+    auto now = Clock.currTime;
+    return now.toUnixTime() * 1000 + now.fracSecs.total!"msecs";
+}
