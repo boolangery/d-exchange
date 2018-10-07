@@ -7,7 +7,12 @@
 import common;
 import crypto.exchanges.binance;
 
+private static Credentials _binanceCredentials;
 
+static this()
+{
+    _binanceCredentials = getTestConfig()["binance"].credentials;
+}
 
 @SingleThreaded
 @Name("test")
@@ -16,15 +21,5 @@ unittest {
     auto binance = new BinanceExchange(creds);
     // auto markets = binance.fetchMarkets();
 
-    if (binance.hasFetchOhlcv) {
-        auto t = binance.fetchOhlcv("LTC/BTC", CandlestickInterval._1M, 100);
-        foreach(candle; t)
-            writelnUt(candle.timestamp);
-    }
-
-    /*
-    binance.addCandleListener(TradingPair("bnb", "btc"), (scope candle) {
-        writelnUt("CALLED");
-    });
-    */
+    binance.fetchBalance();
 }

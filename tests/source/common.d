@@ -50,9 +50,11 @@ TestConfiguration[string] getTestConfig() {
 
     import crypto.api : Exchanges;
 
+    immutable FileName = "./apiConfigs.json";
+
     // if the file doesn't exists, create a stub:
-    if (!exists("./unittest.conf")) {
-        File file = File("./unittest.conf", "w");
+    if (!exists(FileName)) {
+        File file = File(FileName, "w");
 
         TestConfiguration[string] config;
         // iterate over exchange ids:
@@ -68,7 +70,7 @@ TestConfiguration[string] getTestConfig() {
     }
 
     // Read configuration from file:
-    File file = File("./unittest.conf", "r");
+    File file = File(FileName, "r");
 
     string json = "";
     while (!file.eof()) {
