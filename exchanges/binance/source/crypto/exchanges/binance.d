@@ -94,7 +94,7 @@ protected:
     }
 
     /// Sign a binance secure route.
-    override const void _signRequest(URLD url, out string[string] headers)
+    override const void _signRequest(out URLD url, out string[string] headers)
     {
         import std.string : split;
         import std.algorithm : canFind;
@@ -103,17 +103,33 @@ protected:
 
         // endpoint require signing ?
         if (canFind(SignedEndpoints, url.toString().split('/')[$-1])) {
+            import std.digest.hmac;
+            import std.digest : toHexString;
+            import std.digest.sha : SHA256;
 
+            // add timestamp to query params
+            long nonce = getMillisTimestamp() - _timeDiffMs;
+            url.queryParams.add("timestamp", nonce.to!string);
+
+            string totalParams = url.queryParams.toString();
+            string signature = totalParams
+                .representation
+                .hmac!SHA256(_credentials.secretApiKey.representation)
+                .toHexString!(LetterCase.lower);
+
+            url.queryParams.add("signature", nonce.to!string);
+
+            headers["X-MBX-APIKEY"] = _credentials.apiKey;
         }
     }
 
-    override DateTime _fetchTime()
+    override long _fetchServerMillisTimestamp()
     {
         URLD endpoint = BaseUrl;
         endpoint.path = "/api/v1/time";
         Json response = jsonHttpRequest(endpoint, HTTPMethod.GET);
 
-        return _timestampToDateTime(response["serverTime"].get!long);
+        return response["serverTime"].get!long;
     }
 
 public:
@@ -303,7 +319,7 @@ public:
     override Candlestick[] fetchOhlcv(string symbol, CandlestickInterval interval, int limit=500)
     {
         enforceSymbol(symbol);
-        loadMarkets();
+        initialize();
 
         URLD endpoint = BaseUrl;
         endpoint.path = "/api/v1/klines";

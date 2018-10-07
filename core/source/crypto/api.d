@@ -305,6 +305,7 @@ struct Configuration
 
 interface IExchange
 {
+    @property bool initialized();
     @property Market[string] markets();
     @property Market[string] marketsById();
     @property string[] symbols();
@@ -313,6 +314,8 @@ interface IExchange
     @property bool hasFetchTicker();
     @property bool hasFetchOhlcv();
     @property bool hasFetchTrades();
+
+    void initialize();
 
     /// Fetch market informations.
     Market[] fetchMarkets();
@@ -340,12 +343,15 @@ abstract class Exchange : IExchange
 
 protected:
     Credentials _credentials;
+    long _serverTime; /// Server unix timestamp
+    long _timeDiffMs; /// Time difference in millis
 
 private:
     CacheManager _cache;
     Configuration _configuration;
     RateLimitManager _rateManager;
 
+    bool _initialized;
     Market[string] _markets; /// Markets by unified symbols
     Market[string] _marketsById; /// Markets by exchange id
     string[] _symbols;
@@ -356,7 +362,8 @@ private:
     immutable bool _hasFetchTrades;
 
 public /*properties*/:
-    @property Market[string] markets() { loadMarkets(); return _markets; }
+    @property bool initialized() { return _initialized; }
+    @property Market[string] markets() { initialize(); return _markets; }
     @property Market[string] marketsById() { return _marketsById; }
     @property string[] symbols() { return _symbols; }
     @property string[] exchangeIds() { return _exchangeIds; }
@@ -378,6 +385,18 @@ public:
         this.configure(this._configuration);
         _rateManager = new RateLimitManager(_configuration.rateLimitType, _configuration.rateLimit);
         _cache = new CacheManager(_rateManager);
+    }
+
+    void initialize()
+    {
+        if (_initialized) return;
+
+        _serverTime = _fetchServerMillisTimestamp();
+        _timeDiffMs = getMillisTimestamp() - _serverTime;
+
+        loadMarkets();
+
+        _initialized = true;
     }
 
     /// Retrieve market informations.
@@ -421,7 +440,7 @@ protected:
 
     /** Called before making the http request to sign the request.
     Request can be signed with header or by modifying the url */
-    const void _signRequest(URLD url, out string[string] headers)
+    const void _signRequest(out URLD url, out string[string] headers)
     {
 
     }
@@ -544,7 +563,7 @@ protected:
         }
     }
 
-    abstract DateTime _fetchTime();
+    abstract long _fetchServerMillisTimestamp();
 
 private:
     /// Load markets in cache.
