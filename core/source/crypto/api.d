@@ -5,6 +5,7 @@ import vibe.stream.operations;
 import vibe.core.log;
 import std.typecons;
 import std.container;
+import std.experimental.logger;
 
 public import url : URLD = URL;
 public import crypto.utils;
@@ -292,6 +293,13 @@ class Trade
      float amount;        /// amount of base currency
 }
 
+class CurrencyBalance
+{
+    float free;
+    float used;
+    @property float total() { return free + used; }
+}
+
 /** Api configuration. */
 struct Configuration
 {
@@ -314,6 +322,7 @@ interface IExchange
     @property bool hasFetchTicker();
     @property bool hasFetchOhlcv();
     @property bool hasFetchTrades();
+    @property bool hasFetchBalance();
 
     void initialize();
 
@@ -333,6 +342,8 @@ interface IExchange
 
     /// Fetch trade informations.
     Trade[] fetchTrades(string symbol, int limit);
+
+    CurrencyBalance[string] fetchBalance(bool hideZero = true);
 }
 
 /** Base class for implementing a new exchange.
@@ -360,6 +371,7 @@ private:
     immutable bool _hasFetchTicker;
     immutable bool _hasFetchOhlcv;
     immutable bool _hasFetchTrades;
+    immutable bool _hasFetchBalance;
 
 public /*properties*/:
     @property bool initialized() { return _initialized; }
@@ -371,6 +383,7 @@ public /*properties*/:
     @property bool hasFetchTicker() { return _hasFetchTicker; }
     @property bool hasFetchOhlcv() { return _hasFetchOhlcv; }
     @property bool hasFetchTrades() { return _hasFetchTrades; }
+    @property bool hasFetchBalance() { return _hasFetchBalance; }
 
 public:
     /// Constructor.
@@ -380,6 +393,7 @@ public:
         _hasFetchTicker = __traits(isOverrideFunction, T.fetchTicker);
         _hasFetchOhlcv = __traits(isOverrideFunction, T.fetchTicker);
         _hasFetchTrades = __traits(isOverrideFunction, T.fetchTrades);
+        _hasFetchBalance = __traits(isOverrideFunction, T.fetchBalance);
 
         _credentials = credential;
         this.configure(this._configuration);
@@ -428,6 +442,8 @@ public:
         return _setMarkets(markets);
     }
 
+    CurrencyBalance[string] fetchBalance(bool hideZero = true) { throw new ExchangeException("not supported"); }
+
 protected:
     /// Configure the api.
     abstract void configure(ref Configuration config);
@@ -440,7 +456,7 @@ protected:
 
     /** Called before making the http request to sign the request.
     Request can be signed with header or by modifying the url */
-    const void _signRequest(out URLD url, out string[string] headers)
+    const void _signRequest(ref URLD url, out string[string] headers)
     {
 
     }
@@ -450,6 +466,7 @@ protected:
     const Json jsonHttpRequest(URLD url, HTTPMethod method, string[string] headers=null)
     {
         Json data;
+        info(url.toString);
         this._signRequest(url, headers);
         logDebug(url.toString());
 
