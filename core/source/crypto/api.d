@@ -13,6 +13,7 @@ public import std.algorithm: canFind;
 public import std.datetime : DateTime;
 public import std.range.primitives : empty;
 public import std.exception : enforce;
+public import std.typecons : Nullable;
 
 enum Exchanges
 {
@@ -147,6 +148,12 @@ struct Precision
     int quote;
     int amount;
     int price;
+}
+
+class ExchangeConfiguration
+{
+    /// specify the number of milliseconds after timestamp the request is valid for.
+    long recvWindow;
 }
 
 /** API credentials. */
@@ -354,6 +361,7 @@ abstract class Exchange : IExchange
 
 protected:
     Credentials _credentials;
+    Nullable!ExchangeConfiguration _userConfig;
     long _serverTime; /// Server unix timestamp
     long _timeDiffMs; /// Time difference in millis
 
@@ -387,7 +395,7 @@ public /*properties*/:
 
 public:
     /// Constructor.
-    this(this T)(Credentials credential)
+    this(this T)(Credentials credential, ExchangeConfiguration config = null)
     {
         _hasFetchOrderBook = __traits(isOverrideFunction, T.fetchOrderBook);
         _hasFetchTicker = __traits(isOverrideFunction, T.fetchTicker);
@@ -396,6 +404,7 @@ public:
         _hasFetchBalance = __traits(isOverrideFunction, T.fetchBalance);
 
         _credentials = credential;
+        _userConfig = config;
         this.configure(this._configuration);
         _rateManager = new RateLimitManager(_configuration.rateLimitType, _configuration.rateLimit);
         _cache = new CacheManager(_rateManager);

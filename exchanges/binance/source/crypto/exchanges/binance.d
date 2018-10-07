@@ -12,7 +12,7 @@ import crypto.api;
 import std.experimental.logger;
 
 public import crypto.coins;
-public import crypto.api : CandlestickInterval;
+public import crypto.api;
 
 struct TradingPair
 {
@@ -107,6 +107,10 @@ protected:
             import std.digest : toHexString;
             import std.digest.sha : SHA256;
 
+            // add recvWindow to query params
+            if (!_userConfig.isNull)
+                url.queryParams.add("recvWindow", _userConfig.recvWindow.to!string);
+
             // add timestamp to query params
             long nonce = getMillisTimestamp() - _timeDiffMs;
             url.queryParams.add("timestamp", nonce.to!string);
@@ -134,9 +138,9 @@ protected:
     }
 
 public:
-    this(Credentials credential)
+    this(Credentials credential, ExchangeConfiguration config = null)
     {
-        super(credential);
+        super(credential, config);
     }
 
     void connect()
@@ -382,6 +386,7 @@ public:
         URLD endpoint = BaseUrl;
         endpoint.path = "/api/v3/account";
         Json response = jsonHttpRequest(endpoint, HTTPMethod.GET);
+        trace(response);
 
         CurrencyBalance[string] result;
 
