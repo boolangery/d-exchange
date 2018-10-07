@@ -22,6 +22,7 @@ enum Exchanges
 
 public enum RateType {perMilis, perSecond, perMinute, perHour}
 
+/// Base class for all exception.
 class ExchangeException : Exception
 {
     this(string msg, string file = __FILE__, size_t line = __LINE__)
@@ -29,6 +30,17 @@ class ExchangeException : Exception
         super(msg, file, line);
     }
 }
+
+/// Indicate an expired request (for example a request outside of the recvWindow).
+class ExpiredRequestException : ExchangeException
+{
+    this(string msg, string file = __FILE__, size_t line = __LINE__)
+    {
+        super(msg, file, line);
+    }
+}
+
+
 
 /** A class to manage api rate limit. */
 class RateLimitManager
@@ -490,6 +502,8 @@ protected:
                 data = parseJson(jsonString);
             }
         );
+
+        _enforceNoError(data);
         return data;
     }
 
@@ -563,7 +577,7 @@ protected:
     }
 
     /// Ensure symbol existance is a generic cay.
-    void enforceSymbol(string symbol)
+    void _enforceSymbol(string symbol)
     {
         enforce!ExchangeException(symbol in markets, "No market symbol " ~ symbol);
     }
@@ -590,6 +604,13 @@ protected:
     }
 
     abstract long _fetchServerMillisTimestamp();
+
+    /** Ensure no error in a binance json response.
+    It throw exception depending of the error code. */
+    void _enforceNoError(in Json binanceResponse) const
+    {
+        // do nothing
+    }
 
 private:
     /// Load markets in cache.
