@@ -132,7 +132,7 @@ protected:
     {
         URLD endpoint = BaseUrl;
         endpoint.path = "/api/v1/time";
-        Json response = jsonHttpRequest(endpoint, HTTPMethod.GET);
+        Json response = _jsonHttpRequest(endpoint, HTTPMethod.GET);
 
         return response["serverTime"].get!long;
     }
@@ -166,7 +166,7 @@ public:
 
     }
 
-    override void configure(ref Configuration config)
+    override void _configure(ref Configuration config)
     {
 
     }
@@ -232,7 +232,7 @@ public:
         URLD endpoint = BaseUrl;
         endpoint.path = "/api/v1/exchangeInfo";
 
-        Json response = jsonHttpRequest(endpoint, HTTPMethod.GET);
+        Json response = _jsonHttpRequest(endpoint, HTTPMethod.GET);
         // if self.options['adjustForTimeDifference']:
         //    self.load_time_difference()
         Market[] result;
@@ -247,8 +247,8 @@ public:
 
             auto entry = new Market();
             entry.id = market["symbol"].get!string;
-            entry.base = commonCurrencyCode(market["baseAsset"].get!string);
-            entry.quote = commonCurrencyCode(market["quoteAsset"].get!string);
+            entry.base = _commonCurrencyCode(market["baseAsset"].get!string);
+            entry.quote = _commonCurrencyCode(market["quoteAsset"].get!string);
             entry.precision.base = market["baseAssetPrecision"].get!int;
             entry.precision.quote = market["quotePrecision"].get!int;
             entry.precision.amount = market["baseAssetPrecision"].get!int;
@@ -263,13 +263,13 @@ public:
 
             if ("PRICE_FILTER" in filters) {
                 auto filter = filters["PRICE_FILTER"];
-                entry.precision.price = precisionFromString(filter["tickSize"].get!string);
+                entry.precision.price = _precisionFromString(filter["tickSize"].get!string);
                 entry.limits.price.min = filter["minPrice"].get!string.safeTo!double(0);
                 entry.limits.price.max = filter["maxPrice"].get!string.safeTo!double(0);
             }
             if ("LOT_SIZE" in filters) {
                 auto filter = filters["LOT_SIZE"];
-                entry.precision.amount = precisionFromString(filter["stepSize"].get!string);
+                entry.precision.amount = _precisionFromString(filter["stepSize"].get!string);
                 entry.limits.amount.min = filter["minQty"].get!string.safeTo!double(0);
                 entry.limits.amount.max = filter["minQty"].get!string.safeTo!double(0);
             }
@@ -291,7 +291,7 @@ public:
         endpoint.path = "/api/v1/depth";
         endpoint.queryParams.add("symbol", markets[symbol].id);
         endpoint.queryParams.add("limit", limit.to!string);
-        Json response = jsonHttpRequest(endpoint, HTTPMethod.GET);
+        Json response = _jsonHttpRequest(endpoint, HTTPMethod.GET);
 
         OrderBook result = new OrderBook();
         foreach(bid; response["bids"])
@@ -310,7 +310,7 @@ public:
         URLD endpoint = BaseUrl;
         endpoint.path = "/api/v1/ticker/24hr";
         endpoint.queryParams.add("symbol", markets[symbol].id);
-        Json response = jsonHttpRequest(endpoint, HTTPMethod.GET);
+        Json response = _jsonHttpRequest(endpoint, HTTPMethod.GET);
 
         PriceTicker result = new PriceTicker();
         auto last = response["lastPrice"].safeGetStr!float();
@@ -349,7 +349,7 @@ public:
         endpoint.queryParams.add("symbol", markets[symbol].id);
         endpoint.queryParams.add("interval", _candlestickIntervalToStr(interval));
         endpoint.queryParams.add("limit", limit.to!string);
-        Json response = jsonHttpRequest(endpoint, HTTPMethod.GET);
+        Json response = _jsonHttpRequest(endpoint, HTTPMethod.GET);
         Candlestick[] result;
 
         foreach(candle; response) {
@@ -375,7 +375,7 @@ public:
         // TODO: add startTime, endTime, fromId
         endpoint.queryParams.add("symbol", markets[symbol].id);
         endpoint.queryParams.add("limit", limit.to!string);
-        Json response = jsonHttpRequest(endpoint, HTTPMethod.GET);
+        Json response = _jsonHttpRequest(endpoint, HTTPMethod.GET);
 
         Trade[] result;
         foreach(trade; response) {
@@ -403,7 +403,7 @@ public:
     {
         URLD endpoint = BaseUrl;
         endpoint.path = "/api/v3/account";
-        Json response = jsonHttpRequest(endpoint, HTTPMethod.GET);
+        Json response = _jsonHttpRequest(endpoint, HTTPMethod.GET);
 
         CurrencyBalance[string] result;
 

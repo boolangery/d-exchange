@@ -121,7 +121,7 @@ class BittrexExchange: Exchange, IMarketEndpoint, IMarketDataEndpoint {
             import std.digest : toHexString;
             import std.digest.sha : SHA512;
 
-            long nonce = this.getUnixTimestamp();
+            long nonce = this._getUnixTimestamp();
             url.queryParams.overwrite("apikey", _credentials.apiKey);
             url.queryParams.overwrite("nonce", to!string(nonce));
             string sign = url.toString()
@@ -134,14 +134,14 @@ class BittrexExchange: Exchange, IMarketEndpoint, IMarketDataEndpoint {
 
 
     Array!Market fetchMarkets() {
-        auto resp = this.jsonHttpRequestCached!(BittrexResponse!(BittrexMarket[]))(parseURL("https://bittrex.com/api/v1.1/public/getmarkets"), HTTPMethod.GET);
+        auto resp = this._jsonHttpRequestCached!(BittrexResponse!(BittrexMarket[]))(parseURL("https://bittrex.com/api/v1.1/public/getmarkets"), HTTPMethod.GET);
         // convert to generic response:
         auto markets = Array!Market();
 
         foreach (bittrexMarket; resp.result) {
             Market market = bittrexMarket.toGeneric();
-            market.base = this.commonCurrencyCode(market.base);
-            market.quote = this.commonCurrencyCode(market.quote);
+            market.base = this._commonCurrencyCode(market.base);
+            market.quote = this._commonCurrencyCode(market.quote);
             markets.insertBack(market);
         }
         return markets;
@@ -167,11 +167,11 @@ class BittrexExchange: Exchange, IMarketEndpoint, IMarketDataEndpoint {
 
         // Reponses are different for both and buy/sell
         if (type == OrderBookType.Both) {
-            auto resp = this.jsonHttpRequestCached!(BittrexResponse!BittrexOrderBookBoth)(url, HTTPMethod.GET);
+            auto resp = this._jsonHttpRequestCached!(BittrexResponse!BittrexOrderBookBoth)(url, HTTPMethod.GET);
             return resp.result.toGeneric();
         }
         else {
-            auto resp = this.jsonHttpRequestCached!(BittrexResponse!(BittrexOrder[]))(url, HTTPMethod.GET);
+            auto resp = this._jsonHttpRequestCached!(BittrexResponse!(BittrexOrder[]))(url, HTTPMethod.GET);
             auto orderBook = new OrderBook();
             orderBook.type = type;
             if (type == OrderBookType.Buy) {

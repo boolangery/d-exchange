@@ -417,7 +417,7 @@ public:
 
         _credentials = credential;
         _userConfig = config;
-        this.configure(this._configuration);
+        this._configure(this._configuration);
         _rateManager = new RateLimitManager(_configuration.rateLimitType, _configuration.rateLimit);
         _cache = new CacheManager(_rateManager);
     }
@@ -467,10 +467,10 @@ public:
 
 protected:
     /// Configure the api.
-    abstract void configure(ref Configuration config);
+    abstract void _configure(ref Configuration config);
 
     /// Return an unix timestamp.
-    pragma(inline) const long getUnixTimestamp() {
+    pragma(inline) const long _getUnixTimestamp() {
         import std.datetime;
         return Clock.currTime().toUnixTime();
     }
@@ -484,7 +484,7 @@ protected:
 
     /** Performs a synchronous HTTP request on the specified URL,
     using the specified method. */
-    const Json jsonHttpRequest(URLD url, HTTPMethod method, string[string] headers=null)
+    const Json _jsonHttpRequest(URLD url, HTTPMethod method, string[string] headers=null)
     {
         Json data;
         info(url.toString);
@@ -509,47 +509,30 @@ protected:
 
     /** Performs a synchronous HTTP request on the specified URL,
     using the specified method. */
-    const T jsonHttpRequest(T)(URLD url, HTTPMethod method, string[string] headers=null)
+    const T _jsonHttpRequest(T)(URLD url, HTTPMethod method, string[string] headers=null)
     if (is(T == class) | is(T == struct)) {
         import vibe.data.serialization;
-        import vibe.data.json;
 
-        T data;
-        this._signRequest(url, headers);
-        logDebug(url.toString());
-
-        requestHTTP(url.toString(),
-            (scope HTTPClientRequest req) {
-                req.method = method;
-                foreach (header; headers.keys)
-                    req.headers[header] = headers[header];
-                // req.writeJsonBody(["name": "My Name"]);
-            },
-            (scope HTTPClientResponse res) {
-                string json = res.bodyReader.readAllUTF8();
-                data = deserializeJson!T(json);
-            }
-        );
-        return data;
+        return deserializeJson!T(_jsonHttpRequest(url, method, headers));
     }
 
     /** Performs a synchronous HTTP request on the specified URL,
     using the specified method, if api limit rate not exceeded.
     If api limit rate is exceeded, it try to return cached data. */
-    protected T jsonHttpRequestCached(T)(URLD url, HTTPMethod method, string[string] headers=null)
+    protected T _jsonHttpRequestCached(T)(URLD url, HTTPMethod method, string[string] headers=null)
     if (is(T == class) | is(T == struct)) {
         string cacheId = url.toString();
         if (_cache.isFresh(cacheId))
             return _cache.get!T(cacheId);
         else {
-            T data = jsonHttpRequest!T(url, method, headers);
+            T data = _jsonHttpRequest!T(url, method, headers);
             _cache.set(cacheId, data);
             return data;
         }
     }
 
     /// Used to convert a currency code to a common currency code.
-    const string commonCurrencyCode(string currency) {
+    const string _commonCurrencyCode(string currency) {
         enum COMMON = [
             "XBT": "BTC",
             "BCC": "BCH",
@@ -564,7 +547,7 @@ protected:
 
     /** Return a precision from a string.
     Exemple: with an input of "0.01000", it return 2. */
-    const int precisionFromString(string s)
+    const int _precisionFromString(string s)
     {
         import std.string : strip, split;
 
