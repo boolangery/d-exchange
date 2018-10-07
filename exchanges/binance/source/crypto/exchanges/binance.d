@@ -94,12 +94,12 @@ protected:
     }
 
     /// Sign a binance secure route.
-    override const void _signRequest(out URLD url, out string[string] headers)
+    override const void _signRequest(ref URLD url, out string[string] headers)
     {
         import std.string : split;
         import std.algorithm : canFind;
 
-        static immutable SignedEndpoints = ["order"];
+        static immutable SignedEndpoints = ["order", "account"];
 
         // endpoint require signing ?
         if (canFind(SignedEndpoints, url.toString().split('/')[$-1])) {
@@ -115,11 +115,12 @@ protected:
             string signature = totalParams
                 .representation
                 .hmac!SHA256(_credentials.secretApiKey.representation)
-                .toHexString!(LetterCase.lower);
-
-            url.queryParams.add("signature", nonce.to!string);
+                .toHexString!(LetterCase.lower).dup;
+            url.queryParams.add("signature", signature);
 
             headers["X-MBX-APIKEY"] = _credentials.apiKey;
+
+            // TODO: add recWindow
         }
     }
 
@@ -371,6 +372,29 @@ public:
             entry.price = trade["p"].safeGetStr!float();
             entry.amount = trade["q"].safeGetStr!float();
             result ~= entry;
+        }
+
+        return result;
+    }
+
+    override CurrencyBalance[string] fetchBalance(bool hideZero = true)
+    {
+        URLD endpoint = BaseUrl;
+        endpoint.path = "/api/v3/account";
+        Json response = jsonHttpRequest(endpoint, HTTPMethod.GET);
+
+        CurrencyBalance[string] result;
+
+        foreach(balance; response["balances"]) {
+            CurrencyBalance entry = new CurrencyBalance();
+            auto free = balance["free"].safeGetStr!float();
+            auto used = balance["locked"].safeGetStr!float();
+            if (hideZero && (free == 0) && (used == 0))
+                continue;
+
+            entry.free = free;
+            entry.used = used;
+            result[balance["asset"].get!string] = entry;
         }
 
         return result;
