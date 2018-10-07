@@ -327,6 +327,36 @@ class CurrencyBalance
     @property float total() { return free + used; }
 }
 
+class FullOrder
+{
+    string id; /// order unique id
+    DateTime datetime; /// ISO8601 datetime of 'timestamp' with milliseconds
+    long timestamp; /// order placing/opening Unix timestamp in milliseconds
+    long lastTradeTimestamp; /// Unix timestamp of the most recent trade on this order
+    OrderStatus status;
+    string symbol;
+    OrderType type;
+    TradeDirection side;
+    float price; /// float price in quote currency
+    float amount; /// ordered amount of base currency
+    float filled; /// filled amount of base currency
+    float remaining; /// remaining amount to fill
+    float cost; /// 'filled' * 'price' (filling price used where available)
+    Trade[] trades; /// a list of order trades/executions
+    OrderFee fee; /// fee info, if available
+    Json info; /// the original unparsed order structure as is
+}
+
+enum OrderStatus { open, closed, canceled };
+
+class OrderFee
+{
+    string currency; /// which currency the fee is (usually quote)
+    float cost; /// the fee amount in that currency
+    float rate; /// the fee rate (if available)
+}
+
+
 /** Api configuration. */
 struct Configuration
 {
@@ -350,6 +380,7 @@ interface IExchange
     @property bool hasFetchOhlcv();
     @property bool hasFetchTrades();
     @property bool hasFetchBalance();
+    @property bool hasFetchOpenOrders();
 
     void initialize();
 
@@ -371,6 +402,8 @@ interface IExchange
     Trade[] fetchTrades(string symbol, int limit);
 
     CurrencyBalance[string] fetchBalance(bool hideZero = true);
+
+    FullOrder[] fetchOpenOrders(string symbol);
 }
 
 /** Base class for implementing a new exchange.
@@ -400,6 +433,7 @@ private:
     immutable bool _hasFetchOhlcv;
     immutable bool _hasFetchTrades;
     immutable bool _hasFetchBalance;
+    immutable bool _hasFetchOpenOrders;
 
 public /*properties*/:
     @property bool initialized() { return _initialized; }
@@ -412,6 +446,7 @@ public /*properties*/:
     @property bool hasFetchOhlcv() { return _hasFetchOhlcv; }
     @property bool hasFetchTrades() { return _hasFetchTrades; }
     @property bool hasFetchBalance() { return _hasFetchBalance; }
+    @property bool hasFetchOpenOrders() { return _hasFetchOpenOrders; }
 
 public:
     /// Constructor.
@@ -422,6 +457,7 @@ public:
         _hasFetchOhlcv = __traits(isOverrideFunction, T.fetchTicker);
         _hasFetchTrades = __traits(isOverrideFunction, T.fetchTrades);
         _hasFetchBalance = __traits(isOverrideFunction, T.fetchBalance);
+        _hasFetchOpenOrders = __traits(isOverrideFunction, T.fetchOpenOrders);
 
         _credentials = credential;
         _userConfig = config;
@@ -472,6 +508,8 @@ public:
     }
 
     CurrencyBalance[string] fetchBalance(bool hideZero = true) { throw new ExchangeException("not supported"); }
+
+    FullOrder[] fetchOpenOrders(string symbol) { throw new ExchangeException("not supported"); }
 
 protected:
     /// Configure the api.
@@ -610,6 +648,24 @@ protected:
     void _enforceNoError(in Json binanceResponse) const
     {
         // do nothing
+    }
+
+    Market _findMarket(string marketId)
+    {
+        initialize();
+
+        if (marketId in _markets)
+            return _markets[marketId];
+        if (marketId in _marketsById)
+            return _marketsById[marketId];
+        return null;
+    }
+
+    string _findSymbol(string echangeSymbol, Market market = null)
+    {
+        if (market is null)
+            market = _findMarket(echangeSymbol);
+        return market.symbol;
     }
 
 private:
