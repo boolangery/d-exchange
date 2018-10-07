@@ -137,6 +137,24 @@ protected:
         return response["serverTime"].get!long;
     }
 
+    /** Ensure no error in a binance json response.
+    It throw exception depending of the error code.
+    Json payload is:
+    {"msg":"Timestamp for this request is outside of the recvWindow.","code":-1021} */
+    override void _enforceNoError(in Json binanceResponse) const
+    {
+        // if json field "code" exists, then it is an error
+        if (binanceResponse["code"].type !is Json.Type.undefined) {
+            auto code = binanceResponse["code"].get!int;
+            auto msg = binanceResponse["msg"].get!string;
+
+            switch(code) {
+                case -1021: throw new ExpiredRequestException(msg);
+                default: throw new ExchangeException(msg);
+            }
+        }
+    }
+
 public:
     this(Credentials credential, ExchangeConfiguration config = null)
     {
@@ -266,7 +284,7 @@ public:
 
     override OrderBook fetchOrderBook(string symbol, int limit=100)
     {
-        enforceSymbol(symbol);
+        _enforceSymbol(symbol);
         enforce!ExchangeException(limit in DepthValidLimitByWeight, "Not a valid exchange limit " ~ limit.to!string);
 
         URLD endpoint = BaseUrl;
@@ -287,7 +305,7 @@ public:
 
     override PriceTicker fetchTicker(string symbol)
     {
-        enforceSymbol(symbol);
+        _enforceSymbol(symbol);
 
         URLD endpoint = BaseUrl;
         endpoint.path = "/api/v1/ticker/24hr";
@@ -323,7 +341,7 @@ public:
 
     override Candlestick[] fetchOhlcv(string symbol, CandlestickInterval interval, int limit=500)
     {
-        enforceSymbol(symbol);
+        _enforceSymbol(symbol);
         initialize();
 
         URLD endpoint = BaseUrl;
@@ -350,7 +368,7 @@ public:
 
     override Trade[] fetchTrades(string symbol, int limit=500)
     {
-        enforceSymbol(symbol);
+        _enforceSymbol(symbol);
 
         URLD endpoint = BaseUrl;
         endpoint.path = "/api/v1/aggTrades";
@@ -386,7 +404,6 @@ public:
         URLD endpoint = BaseUrl;
         endpoint.path = "/api/v3/account";
         Json response = jsonHttpRequest(endpoint, HTTPMethod.GET);
-        trace(response);
 
         CurrencyBalance[string] result;
 
