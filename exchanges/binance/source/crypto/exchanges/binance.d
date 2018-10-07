@@ -64,6 +64,7 @@ private /*constants*/:
     immutable string BaseEndpoint = "https://api.binance.com";
     immutable string WsEndpoint = "wss://stream.binance.com:9443";
     static immutable int[int] DepthValidLimitByWeight;
+    static immutable OrderStatus[string] OrderStatusToStd;
 
     static this()
     {
@@ -75,8 +76,13 @@ private /*constants*/:
             50: 1,
             100: 1,
             500: 5,
-            1000: 10
-        ];
+            1000: 10];
+
+        OrderStatusToStd = [
+            "NEW": OrderStatus.open,
+            "PARTIALLY_FILLED": OrderStatus.open,
+            "FILLED": OrderStatus.closed,
+            "CANCELED": OrderStatus.canceled,];
     }
 
 private:
@@ -419,6 +425,43 @@ public:
             result[balance["asset"].get!string] = entry;
         }
 
+        return result;
+    }
+
+    override FullOrder[] fetchOpenOrders(string symbol)
+    {
+        _enforceSymbol(symbol);
+
+        URLD endpoint = BaseUrl;
+        endpoint.path = "/api/v3/openOrders";
+        endpoint.queryParams.add("symbol", markets[symbol].id);
+        Json response = _jsonHttpRequest(endpoint, HTTPMethod.GET);
+
+        FullOrder[] result;
+        foreach(order; response) {
+            FullOrder entry = new FullOrder();
+            entry.id = order["orderId"].get!string;
+            entry.timestamp = order["time"].get!long;
+            entry.datetime = _timestampToDateTime(entry.timestamp);
+            entry.status = OrderStatusToStd[order["status"].get!string];
+            entry.symbol = _findSymbol(order["symbol"].get!string);
+            /*
+              {
+                "clientOrderId": "myOrder1",
+                "price": "0.1",
+                "origQty": "1.0",
+                "executedQty": "0.0",
+                "cummulativeQuoteQty": "0.0",
+                "timeInForce": "GTC",
+                "side": "BUY",
+                "stopPrice": "0.0",
+                "icebergQty": "0.0",
+                "time": 1499827319559,
+                "updateTime": 1499827319559,
+                "isWorking": true
+              }
+              */
+        }
         return result;
     }
 }
