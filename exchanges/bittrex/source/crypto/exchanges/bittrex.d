@@ -115,7 +115,7 @@ class BittrexExchange: Exchange, IMarketEndpoint, IMarketDataEndpoint {
     /**
         Bittrex signing process.
     */
-    protected override const void signRequest(url.URL url, out string[string] headers) {
+    protected override const void signRequest(URLD url, out string[string] headers) {
         if (!indexOf(url.path, "public")) {
             import std.digest.hmac;
             import std.digest : toHexString;

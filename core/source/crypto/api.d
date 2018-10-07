@@ -419,9 +419,9 @@ protected:
         return Clock.currTime().toUnixTime();
     }
 
-    /** Called before making the http request to sign the request
-    if needed. Return the new url. */
-    const void signRequest(URLD currentUrl, out string[string] headers)
+    /** Called before making the http request to sign the request.
+    Request can be signed with header or by modifying the url */
+    const void _signRequest(URLD url, out string[string] headers)
     {
 
     }
@@ -431,7 +431,7 @@ protected:
     const Json jsonHttpRequest(URLD url, HTTPMethod method, string[string] headers=null)
     {
         Json data;
-        this.signRequest(url, headers);
+        this._signRequest(url, headers);
         logDebug(url.toString());
 
         requestHTTP(url.toString(),
@@ -456,7 +456,7 @@ protected:
         import vibe.data.json;
 
         T data;
-        this.signRequest(url, headers);
+        this._signRequest(url, headers);
         logDebug(url.toString());
 
         requestHTTP(url.toString(),
@@ -543,6 +543,8 @@ protected:
             case CandlestickInterval._1M:   return "1M";
         }
     }
+
+    abstract DateTime _fetchTime();
 
 private:
     /// Load markets in cache.

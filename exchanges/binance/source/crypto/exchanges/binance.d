@@ -93,6 +93,29 @@ protected:
         return cast(DateTime) SysTime(unixTimeToStdTime(ts / 1000));
     }
 
+    /// Sign a binance secure route.
+    override const void _signRequest(URLD url, out string[string] headers)
+    {
+        import std.string : split;
+        import std.algorithm : canFind;
+
+        static immutable SignedEndpoints = ["order"];
+
+        // endpoint require signing ?
+        if (canFind(SignedEndpoints, url.toString().split('/')[$-1])) {
+
+        }
+    }
+
+    override DateTime _fetchTime()
+    {
+        URLD endpoint = BaseUrl;
+        endpoint.path = "/api/v1/time";
+        Json response = jsonHttpRequest(endpoint, HTTPMethod.GET);
+
+        return _timestampToDateTime(response["serverTime"].get!long);
+    }
+
 public:
     this(Credentials credential)
     {
@@ -336,5 +359,4 @@ public:
 
         return result;
     }
-
 }
