@@ -40,6 +40,14 @@ class ExpiredRequestException : ExchangeException
     }
 }
 
+class InvalidResponseException : ExchangeException
+{
+    this(string msg, string file = __FILE__, size_t line = __LINE__)
+    {
+        super(msg, file, line);
+    }
+}
+
 
 
 /** A class to manage api rate limit. */
@@ -487,21 +495,30 @@ protected:
     const Json _jsonHttpRequest(URLD url, HTTPMethod method, string[string] headers=null)
     {
         Json data;
-        info(url.toString);
-        this._signRequest(url, headers);
-        logDebug(url.toString());
 
-        requestHTTP(url.toString(),
-            (scope HTTPClientRequest req) {
-                req.method = method;
-                foreach (header; headers.keys)
-                    req.headers[header] = headers[header];
-            },
-            (scope HTTPClientResponse res) {
-                string jsonString = res.bodyReader.readAllUTF8();
-                data = parseJson(jsonString);
-            }
-        );
+        try {
+            info(url.toString);
+            this._signRequest(url, headers);
+            logDebug(url.toString());
+
+            requestHTTP(url.toString(),
+                (scope HTTPClientRequest req) {
+                    req.method = method;
+                    foreach (header; headers.keys)
+                        req.headers[header] = headers[header];
+                },
+                (scope HTTPClientResponse res) {
+                    string jsonString = res.bodyReader.readAllUTF8();
+                    data = parseJson(jsonString);
+                }
+            );
+        }
+        catch (JSONException e) {
+            throw new InvalidResponseException(e.msg);
+        }
+        catch (Exception e) {
+            throw new ExchangeException(e.msg);
+        }
 
         _enforceNoError(data);
         return data;
