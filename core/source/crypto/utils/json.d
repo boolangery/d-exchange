@@ -27,7 +27,8 @@ Json[T] indexBy(T = string)(Json array, string field)
 
 /** A no-throw json get.
 Template_Params:
-    T = Value type to get
+    T = Value type to get.
+
 Params:
     json = The json object to use
     defaultValue = The default value in case of failure
@@ -42,10 +43,12 @@ T safeGet(T)(Json json, T defaultValue = T.init) @safe nothrow
     }
 }
 
+
 /** A json get extension to enforce an api exception in case of failure.
 Template_Params:
     T = The type to get
     TFrom = If set, apply a conversion from TFrom to T before, equivalent to json.get!TFrom.to!T
+
 Throws:
     InvalidResponseException on failure.
 */

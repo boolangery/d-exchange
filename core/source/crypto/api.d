@@ -1,3 +1,9 @@
+/**
+    Exchange api core.
+
+    It contains unified exchange objects and allow to implement new
+    exchanges based on this model.
+*/
 module crypto.api;
 
 import vibe.http.client;
@@ -21,13 +27,11 @@ enum Exchanges
     bittrex = "bittrex"
 }
 
-public enum RateType {perMilis, perSecond, perMinute, perHour}
-
-
+enum RateType {perMilis, perSecond, perMinute, perHour}
 
 
 /** A class to manage api rate limit. */
-class RateLimitManager
+private class RateLimitManager
 {
     import std.datetime;
 
@@ -95,7 +99,8 @@ class RateLimitManager
 }
 
 /** A class to manage api cache. */
-class CacheManager {
+private class CacheManager
+{
     private Object[string] _cache;
     private RateLimitManager _manager;
 
@@ -117,16 +122,11 @@ class CacheManager {
     }
 }
 
-interface IGenericResponse(T)
-{
-    T toGeneric();
-}
-
-/** Represent a min/max range. */
+/** Represent a price range. */
 struct Range
 {
-    float min;
-    float max;
+    float min;  /// The minimum value
+    float max; /// The maximum value
 }
 
 /** Market limits. */
@@ -137,15 +137,16 @@ struct Limits
     Range cost;
 }
 
-/** Market precision. */
+/** Define a market precision in digits. */
 struct Precision
 {
-    int base;
-    int quote;
-    int amount;
-    int price;
+    int base; /// Precision of base currency
+    int quote; /// Precision of quote currency
+    int amount; /// Amount precision
+    int price; /// Price precision
 }
 
+/** Exchange configuration. */
 class ExchangeConfiguration
 {
     /// specify the number of milliseconds after timestamp the request is valid for.
@@ -155,8 +156,8 @@ class ExchangeConfiguration
 /** API credentials. */
 struct Credentials
 {
-    string apiKey;
-    string secretApiKey;
+    string apiKey; /// Public API key
+    string secretApiKey; /// Secret API key
 }
 
 /** Represent a generic market. */
