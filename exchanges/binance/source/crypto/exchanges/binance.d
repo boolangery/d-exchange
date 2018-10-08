@@ -168,7 +168,7 @@ protected:
             // if json field "code" exists, then it is an error
             if (binanceResponse["code"].type !is Json.Type.undefined) {
                 auto code = binanceResponse["code"].enforceGet!int;
-                auto msg = binanceResponse["msg"].enforceGet!string;
+                auto msg = binanceResponse["msg"].enforceGetStr;
 
                 switch(code) {
                     case -1021: throw new ExpiredRequestException(msg);
@@ -269,14 +269,14 @@ public:
             Json[string] filters = crypto.utils.json.indexBy(market["filters"], "filterType");
 
             auto entry = new Market();
-            entry.id = market["symbol"].enforceGet!string;
-            entry.base = _commonCurrencyCode(market["baseAsset"].enforceGet!string);
-            entry.quote = _commonCurrencyCode(market["quoteAsset"].enforceGet!string);
+            entry.id = market["symbol"].enforceGetStr;
+            entry.base = _commonCurrencyCode(market["baseAsset"].enforceGetStr);
+            entry.quote = _commonCurrencyCode(market["quoteAsset"].enforceGetStr);
             entry.precision.base = market["baseAssetPrecision"].enforceGet!int;
             entry.precision.quote = market["quotePrecision"].enforceGet!int;
             entry.precision.amount = market["baseAssetPrecision"].enforceGet!int;
             entry.precision.price = market["quotePrecision"].enforceGet!int;
-            entry.active = (market["status"].enforceGet!string == "TRADING");
+            entry.active = (market["status"].enforceGetStr == "TRADING");
 
             entry.info = market;
             entry.limits.amount.min = 2;
@@ -286,19 +286,19 @@ public:
 
             if ("PRICE_FILTER" in filters) {
                 auto filter = filters["PRICE_FILTER"];
-                entry.precision.price = _precisionFromString(filter["tickSize"].enforceGet!string);
-                entry.limits.price.min = filter["minPrice"].enforceGet!(float, string);
-                entry.limits.price.max = filter["maxPrice"].enforceGet!(float, string);
+                entry.precision.price = _precisionFromString(filter["tickSize"].enforceGetStr);
+                entry.limits.price.min = filter["minPrice"].enforceGetStrToF;
+                entry.limits.price.max = filter["maxPrice"].enforceGetStrToF;
             }
             if ("LOT_SIZE" in filters) {
                 auto filter = filters["LOT_SIZE"];
-                entry.precision.amount = _precisionFromString(filter["stepSize"].enforceGet!string);
-                entry.limits.amount.min = filter["minQty"].enforceGet!(float, string);
-                entry.limits.amount.max = filter["minQty"].enforceGet!(float, string);
+                entry.precision.amount = _precisionFromString(filter["stepSize"].enforceGetStr);
+                entry.limits.amount.min = filter["minQty"].enforceGetStrToF;
+                entry.limits.amount.max = filter["minQty"].enforceGetStrToF;
             }
             if ("MIN_NOTIONAL" in filters) {
                 auto filter = filters["MIN_NOTIONAL"];
-                entry.limits.cost.min = filter["minNotional"].enforceGet!(float, string);
+                entry.limits.cost.min = filter["minNotional"].enforceGetStrToF;
             }
             result ~= entry;
         }
@@ -318,10 +318,10 @@ public:
 
         OrderBook result = new OrderBook();
         foreach(bid; response["bids"])
-            result.bids ~= Order(bid[1].enforceGet!(float, string), bid[0].enforceGet!(float, string));
+            result.bids ~= Order(bid[1].enforceGetStrToF, bid[0].enforceGetStrToF);
 
         foreach(ask; response["asks"])
-            result.asks ~= Order(ask[1].enforceGet!(float, string), ask[0].enforceGet!(float, string));
+            result.asks ~= Order(ask[1].enforceGetStrToF, ask[0].enforceGetStrToF);
 
         return result;
     }
@@ -342,22 +342,22 @@ public:
         result.info = response;
         result.timestamp = response["closeTime"].enforceGet!long;
         result.datetime = _timestampToDateTime(result.timestamp);
-        result.high = response["highPrice"].enforceGet!(float, string);
-        result.low = response["lowPrice"].enforceGet!(float, string);
-        result.bid = response["bidPrice"].enforceGet!(float, string);
-        result.bidVolume = response["bidQty"].enforceGet!(float, string);
-        result.ask = response["askPrice"].enforceGet!(float, string);
-        result.askVolume = response["askQty"].enforceGet!(float, string);
-        result.vwap = response["weightedAvgPrice"].enforceGet!(float, string);
-        result.open = response["openPrice"].enforceGet!(float, string);
+        result.high = response["highPrice"].enforceGetStrToF;
+        result.low = response["lowPrice"].enforceGetStrToF;
+        result.bid = response["bidPrice"].enforceGetStrToF;
+        result.bidVolume = response["bidQty"].enforceGetStrToF;
+        result.ask = response["askPrice"].enforceGetStrToF;
+        result.askVolume = response["askQty"].enforceGetStrToF;
+        result.vwap = response["weightedAvgPrice"].enforceGetStrToF;
+        result.open = response["openPrice"].enforceGetStrToF;
         result.close = last;
         result.last = last;
-        result.previousClose = response["prevClosePrice"].enforceGet!(float, string);
-        result.change = response["priceChange"].enforceGet!(float, string);
-        result.percentage = response["priceChangePercent"].enforceGet!(float, string);
+        result.previousClose = response["prevClosePrice"].enforceGetStrToF;
+        result.change = response["priceChange"].enforceGetStrToF;
+        result.percentage = response["priceChangePercent"].enforceGetStrToF;
         result.average = 0;
-        result.baseVolume = response["volume"].enforceGet!(float, string);
-        result.quoteVolume = response["quoteVolume"].enforceGet!(float, string);
+        result.baseVolume = response["volume"].enforceGetStrToF;
+        result.quoteVolume = response["quoteVolume"].enforceGetStrToF;
 
         return result;
     }
@@ -378,11 +378,11 @@ public:
         foreach(candle; response) {
             Candlestick entry = new Candlestick();
             entry.timestamp = candle[0].enforceGet!long;
-            entry.open   = candle[1].enforceGet!(float, string);
-            entry.high   = candle[2].enforceGet!(float, string);
-            entry.low    = candle[3].enforceGet!(float, string);
-            entry.close  = candle[4].enforceGet!(float, string);
-            entry.volume = candle[5].enforceGet!(float, string);
+            entry.open   = candle[1].enforceGetStrToF;
+            entry.high   = candle[2].enforceGetStrToF;
+            entry.low    = candle[3].enforceGetStrToF;
+            entry.close  = candle[4].enforceGetStrToF;
+            entry.volume = candle[5].enforceGetStrToF;
 
             result ~= entry;
         }
@@ -414,8 +414,8 @@ public:
                 entry.side = TradeDirection.sell;
             else
                 entry.side = TradeDirection.buy;
-            entry.price = trade["p"].enforceGet!(float, string);
-            entry.amount = trade["q"].enforceGet!(float, string);
+            entry.price = trade["p"].enforceGetStrToF;
+            entry.amount = trade["q"].enforceGetStrToF;
             result ~= entry;
         }
 
@@ -432,14 +432,14 @@ public:
 
         foreach(balance; response["balances"]) {
             CurrencyBalance entry = new CurrencyBalance();
-            auto free = balance["free"].enforceGet!(float, string);
-            auto used = balance["locked"].enforceGet!(float, string);
+            auto free = balance["free"].enforceGetStrToF;
+            auto used = balance["locked"].enforceGetStrToF;
             if (hideZero && (free == 0) && (used == 0))
                 continue;
 
             entry.free = free;
             entry.used = used;
-            result[balance["asset"].enforceGet!string] = entry;
+            result[balance["asset"].enforceGetStr] = entry;
         }
 
         return result;
@@ -460,14 +460,14 @@ public:
             entry.id = order["orderId"].enforceGet!(string, long);
             entry.timestamp = order["time"].enforceGet!long;
             entry.datetime = _timestampToDateTime(entry.timestamp);
-            entry.status = OrderStatusToStd[order["status"].enforceGet!string];
-            entry.symbol = _findSymbol(order["symbol"].enforceGet!string);
-            entry.type = OrderTypeToStd[order["type"].enforceGet!string];
-            entry.side = TradeDirectionToStd[order["side"].enforceGet!string];
-            entry.price = order["price"].enforceGet!(float, string);
-            entry.amount = order["origQty"].enforceGet!(float, string);
-            entry.filled = order["executedQty"].enforceGet!(float, string);
-            entry.cost = order["cummulativeQuoteQty"].enforceGet!(float, string);
+            entry.status = OrderStatusToStd[order["status"].enforceGetStr];
+            entry.symbol = _findSymbol(order["symbol"].enforceGetStr);
+            entry.type = OrderTypeToStd[order["type"].enforceGetStr];
+            entry.side = TradeDirectionToStd[order["side"].enforceGetStr];
+            entry.price = order["price"].enforceGetStrToF;
+            entry.amount = order["origQty"].enforceGetStrToF;
+            entry.filled = order["executedQty"].enforceGetStrToF;
+            entry.cost = order["cummulativeQuoteQty"].enforceGetStrToF;
             entry.info = order;
             result ~= entry;
         }

@@ -61,3 +61,6 @@ T enforceGet(T, TFrom = void)(Json json)
         throw new InvalidResponseException(e.msg);
     }
 }
+
+alias enforceGetStr = enforceGet!string;
+alias enforceGetStrToF = enforceGet!(float, string);
