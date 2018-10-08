@@ -7,8 +7,9 @@ import std.typecons;
 import std.container;
 import std.experimental.logger;
 
-public import url : URLD = URL;
+public import crypto.exceptions;
 public import crypto.utils;
+public import url : URLD = URL;
 public import std.algorithm: canFind;
 public import std.datetime : DateTime;
 public import std.range.primitives : empty;
@@ -22,31 +23,6 @@ enum Exchanges
 
 public enum RateType {perMilis, perSecond, perMinute, perHour}
 
-/// Base class for all exception.
-class ExchangeException : Exception
-{
-    this(string msg, string file = __FILE__, size_t line = __LINE__)
-    {
-        super(msg, file, line);
-    }
-}
-
-/// Indicate an expired request (for example a request outside of the recvWindow).
-class ExpiredRequestException : ExchangeException
-{
-    this(string msg, string file = __FILE__, size_t line = __LINE__)
-    {
-        super(msg, file, line);
-    }
-}
-
-class InvalidResponseException : ExchangeException
-{
-    this(string msg, string file = __FILE__, size_t line = __LINE__)
-    {
-        super(msg, file, line);
-    }
-}
 
 
 
