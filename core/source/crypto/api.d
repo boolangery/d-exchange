@@ -301,7 +301,10 @@ enum CandlestickInterval
     _3d,    _1w,    _1M
 }
 
-enum OrderType { undefined, market, limit }
+enum OrderType { undefined, market, limit, stopLoss,
+                 stopLossLimit, takeProfit, takeProfitLimit,
+                 limitMaker }
+
 
 enum TradeDirection { buy, sell }
 
@@ -340,7 +343,7 @@ class FullOrder
     float price; /// float price in quote currency
     float amount; /// ordered amount of base currency
     float filled; /// filled amount of base currency
-    float remaining; /// remaining amount to fill
+    @property float remaining() { return amount - filled; } /// remaining amount to fill
     float cost; /// 'filled' * 'price' (filling price used where available)
     Trade[] trades; /// a list of order trades/executions
     OrderFee fee; /// fee info, if available
@@ -460,7 +463,12 @@ public:
         _hasFetchOpenOrders = __traits(isOverrideFunction, T.fetchOpenOrders);
 
         _credentials = credential;
-        _userConfig = config;
+
+        if (config is null)
+            _userConfig = Nullable!ExchangeConfiguration.init;
+        else
+            _userConfig = config;
+
         this._configure(this._configuration);
         _rateManager = new RateLimitManager(_configuration.rateLimitType, _configuration.rateLimit);
         _cache = new CacheManager(_rateManager);

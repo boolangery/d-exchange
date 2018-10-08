@@ -63,8 +63,12 @@ class BinanceExchange: Exchange
 private /*constants*/:
     immutable string BaseEndpoint = "https://api.binance.com";
     immutable string WsEndpoint = "wss://stream.binance.com:9443";
+    /// last part of signed enpoints
+    static immutable SignedEndpoints = ["order", "account", "openOrders"];
     static immutable int[int] DepthValidLimitByWeight;
     static immutable OrderStatus[string] OrderStatusToStd;
+    static immutable OrderType[string] OrderTypeToStd;
+    static immutable TradeDirection[string] TradeDirectionToStd;
 
     static this()
     {
@@ -79,10 +83,23 @@ private /*constants*/:
             1000: 10];
 
         OrderStatusToStd = [
-            "NEW": OrderStatus.open,
+            "NEW":              OrderStatus.open,
             "PARTIALLY_FILLED": OrderStatus.open,
-            "FILLED": OrderStatus.closed,
-            "CANCELED": OrderStatus.canceled,];
+            "FILLED":           OrderStatus.closed,
+            "CANCELED":         OrderStatus.canceled,];
+
+        OrderTypeToStd = [
+            "LIMIT":             OrderType.market,
+            "MARKET":            OrderType.limit,
+            "STOP_LOSS":         OrderType.stopLoss,
+            "STOP_LOSS_LIMIT":   OrderType.stopLossLimit,
+            "TAKE_PROFIT":       OrderType.takeProfit,
+            "TAKE_PROFIT_LIMIT": OrderType.takeProfitLimit,
+            "LIMIT_MAKER":       OrderType.limitMaker];
+
+        TradeDirectionToStd = [
+            "BUY":  TradeDirection.buy,
+            "SELL": TradeDirection.sell];
     }
 
 private:
@@ -105,10 +122,8 @@ protected:
         import std.string : split;
         import std.algorithm : canFind;
 
-        static immutable SignedEndpoints = ["order", "account"];
-
         // endpoint require signing ?
-        if (canFind(SignedEndpoints, url.toString().split('/')[$-1])) {
+        if (canFind(SignedEndpoints, url.path.split('/')[$-1])) {
             import std.digest.hmac;
             import std.digest : toHexString;
             import std.digest.sha : SHA256;
@@ -149,14 +164,16 @@ protected:
     {"msg":"Timestamp for this request is outside of the recvWindow.","code":-1021} */
     override void _enforceNoError(in Json binanceResponse) const
     {
-        // if json field "code" exists, then it is an error
-        if (binanceResponse["code"].type !is Json.Type.undefined) {
-            auto code = binanceResponse["code"].get!int;
-            auto msg = binanceResponse["msg"].get!string;
+        if (binanceResponse.type == Json.Type.object) {
+            // if json field "code" exists, then it is an error
+            if (binanceResponse["code"].type !is Json.Type.undefined) {
+                auto code = binanceResponse["code"].get!int;
+                auto msg = binanceResponse["msg"].get!string;
 
-            switch(code) {
-                case -1021: throw new ExpiredRequestException(msg);
-                default: throw new ExchangeException(msg);
+                switch(code) {
+                    case -1021: throw new ExpiredRequestException(msg);
+                    default: throw new ExchangeException(msg);
+                }
             }
         }
     }
@@ -440,27 +457,19 @@ public:
         FullOrder[] result;
         foreach(order; response) {
             FullOrder entry = new FullOrder();
-            entry.id = order["orderId"].get!string;
+            entry.id = order["orderId"].get!long.to!string;
             entry.timestamp = order["time"].get!long;
             entry.datetime = _timestampToDateTime(entry.timestamp);
             entry.status = OrderStatusToStd[order["status"].get!string];
             entry.symbol = _findSymbol(order["symbol"].get!string);
-            /*
-              {
-                "clientOrderId": "myOrder1",
-                "price": "0.1",
-                "origQty": "1.0",
-                "executedQty": "0.0",
-                "cummulativeQuoteQty": "0.0",
-                "timeInForce": "GTC",
-                "side": "BUY",
-                "stopPrice": "0.0",
-                "icebergQty": "0.0",
-                "time": 1499827319559,
-                "updateTime": 1499827319559,
-                "isWorking": true
-              }
-              */
+            entry.type = OrderTypeToStd[order["type"].get!string];
+            entry.side = TradeDirectionToStd[order["side"].get!string];
+            entry.price = order["price"].safeGetStr!float;
+            entry.amount = order["origQty"].safeGetStr!float;
+            entry.filled = order["executedQty"].safeGetStr!float;
+            entry.cost = order["cummulativeQuoteQty"].safeGetStr!float;
+            entry.info = order;
+            result ~= entry;
         }
         return result;
     }

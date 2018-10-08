@@ -50,7 +50,6 @@ T safeGetStr(T)(Json json, T defaultValue = T.init)
     return json.get!string.to!T;
 }
 
-
 T safeTo(T, V)(V valueToConv, T defaultValue)
 {
     scope(failure) return defaultValue;
