@@ -7,6 +7,8 @@ module crypto.utils.json;
 public import vibe.data.json : Json;
 public import std.conv : to;
 
+import crypto.exceptions;
+
 /// Take an Json array of object, and return an associative array
 /// indexed by an object field.
 Json[T] indexBy(T = string)(Json array, string field)
@@ -21,8 +23,16 @@ Json[T] indexBy(T = string)(Json array, string field)
     return result;
 }
 
-/// Json get extension to do a safe get.
-T safeGet(T)(Json json, T defaultValue = T.init)
+
+
+/** A no-throw json get.
+Template_Params:
+    T = Value type to get
+Params:
+    json = The json object to use
+    defaultValue = The default value in case of failure
+*/
+T safeGet(T)(Json json, T defaultValue = T.init) @safe nothrow
 {
     try {
         return json.get!T;
@@ -32,9 +42,22 @@ T safeGet(T)(Json json, T defaultValue = T.init)
     }
 }
 
-/// Json get extension to get a string field and convert it to a type safely.
-T safeGetStr(T)(Json json, T defaultValue = T.init)
+/** A json get extension to enforce an api exception in case of failure.
+Template_Params:
+    T = The type to get
+    TFrom = If set, apply a conversion from TFrom to T before, equivalent to json.get!TFrom.to!T
+Throws:
+    InvalidResponseException on failure.
+*/
+T enforceGet(T, TFrom = void)(Json json)
 {
-    scope(failure) return defaultValue;
-    return json.get!string.to!T;
+    try {
+        static if (is(TFrom == void))
+            return json.get!T;
+        else
+            return json.get!TFrom.to!T;
+    }
+    catch (Exception e) {
+        throw new InvalidResponseException(e.msg);
+    }
 }
