@@ -266,7 +266,7 @@ public:
             if (market["symbol"] == "123456")
                 continue;
 
-            Json[string] filters = indexBy(market["filters"], "filterType");
+            Json[string] filters = crypto.utils.json.indexBy(market["filters"], "filterType");
 
             auto entry = new Market();
             entry.id = market["symbol"].get!string;
