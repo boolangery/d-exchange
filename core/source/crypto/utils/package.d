@@ -43,7 +43,7 @@ T safeGet(T)(Json json, T defaultValue = T.init)
     }
 }
 
-/// Json get extension to get a string field and convert it a type safely.
+/// Json get extension to get a string field and convert it to a type safely.
 T safeGetStr(T)(Json json, T defaultValue = T.init)
 {
     scope(failure) return defaultValue;
