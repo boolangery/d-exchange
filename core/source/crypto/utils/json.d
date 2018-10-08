@@ -49,7 +49,7 @@ Template_Params:
 Throws:
     InvalidResponseException on failure.
 */
-T enforceGet(T, TFrom = void)(Json json)
+T enforceGet(T, TFrom = void)(Json json) @safe
 {
     try {
         static if (is(TFrom == void))

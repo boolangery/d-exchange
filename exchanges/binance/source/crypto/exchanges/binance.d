@@ -117,7 +117,7 @@ protected:
     }
 
     /// Sign a binance secure route.
-    override const void _signRequest(ref URLD url, out string[string] headers)
+    override void _signRequest(ref URLD url, out string[string] headers) const @safe
     {
         import std.string : split;
         import std.algorithm : canFind;
@@ -149,7 +149,7 @@ protected:
         }
     }
 
-    override long _fetchServerMillisTimestamp()
+    override long _fetchServerMillisTimestamp() @safe
     {
         URLD endpoint = BaseUrl;
         endpoint.path = "/api/v1/time";
@@ -162,7 +162,7 @@ protected:
     It throw exception depending of the error code.
     Json payload is:
     {"msg":"Timestamp for this request is outside of the recvWindow.","code":-1021} */
-    override void _enforceNoError(in Json binanceResponse) const
+    override void _enforceNoError(in Json binanceResponse) @safe const
     {
         if (binanceResponse.type == Json.Type.object) {
             // if json field "code" exists, then it is an error

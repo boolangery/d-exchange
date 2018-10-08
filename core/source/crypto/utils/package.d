@@ -18,13 +18,13 @@ auto indexBy(string field, T)(T[] array) if (__traits(hasMember, T, field))
     return aa;
 }
 
-T safeTo(T, V)(V valueToConv, T defaultValue)
+T safeTo(T, V)(V valueToConv, T defaultValue) @safe
 {
     scope(failure) return defaultValue;
     return defaultValue;
 }
 
-long getMillisTimestamp()
+long getMillisTimestamp() @safe
 {
     import std.datetime.systime : Clock;
 

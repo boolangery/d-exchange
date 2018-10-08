@@ -500,21 +500,22 @@ protected:
     abstract void _configure(ref Configuration config);
 
     /// Return an unix timestamp.
-    pragma(inline) const long _getUnixTimestamp() {
+    pragma(inline) long _getUnixTimestamp() const
+    {
         import std.datetime;
         return Clock.currTime().toUnixTime();
     }
 
     /** Called before making the http request to sign the request.
     Request can be signed with header or by modifying the url */
-    const void _signRequest(ref URLD url, out string[string] headers)
+    void _signRequest(ref URLD url, out string[string] headers) const @safe
     {
 
     }
 
     /** Performs a synchronous HTTP request on the specified URL,
     using the specified method. */
-    const Json _jsonHttpRequest(URLD url, HTTPMethod method, string[string] headers=null)
+    Json _jsonHttpRequest(URLD url, HTTPMethod method, string[string] headers=null) const @safe
     {
         Json data;
 
@@ -548,7 +549,7 @@ protected:
 
     /** Performs a synchronous HTTP request on the specified URL,
     using the specified method. */
-    const T _jsonHttpRequest(T)(URLD url, HTTPMethod method, string[string] headers=null)
+    T _jsonHttpRequest(T)(URLD url, HTTPMethod method, string[string] headers=null) const @safe
     if (is(T == class) | is(T == struct)) {
         import vibe.data.serialization;
 
@@ -558,7 +559,7 @@ protected:
     /** Performs a synchronous HTTP request on the specified URL,
     using the specified method, if api limit rate not exceeded.
     If api limit rate is exceeded, it try to return cached data. */
-    protected T _jsonHttpRequestCached(T)(URLD url, HTTPMethod method, string[string] headers=null)
+    protected T _jsonHttpRequestCached(T)(URLD url, HTTPMethod method, string[string] headers=null) @safe
     if (is(T == class) | is(T == struct)) {
         string cacheId = url.toString();
         if (_cache.isFresh(cacheId))
@@ -571,7 +572,8 @@ protected:
     }
 
     /// Used to convert a currency code to a common currency code.
-    const string _commonCurrencyCode(string currency) {
+    string _commonCurrencyCode(string currency) const
+    {
         enum COMMON = [
             "XBT": "BTC",
             "BCC": "BCH",
@@ -586,7 +588,7 @@ protected:
 
     /** Return a precision from a string.
     Exemple: with an input of "0.01000", it return 2. */
-    const int _precisionFromString(string s)
+    int _precisionFromString(string s) const
     {
         import std.string : strip, split;
 
@@ -604,7 +606,7 @@ protected:
         enforce!ExchangeException(symbol in markets, "No market symbol " ~ symbol);
     }
 
-    string _candlestickIntervalToStr(CandlestickInterval interval)
+    string _candlestickIntervalToStr(CandlestickInterval interval) const
     {
         final switch (interval) {
             case CandlestickInterval._1m:   return "1m";
@@ -625,16 +627,16 @@ protected:
         }
     }
 
-    abstract long _fetchServerMillisTimestamp();
+    abstract long _fetchServerMillisTimestamp() @safe;
 
     /** Ensure no error in a binance json response.
     It throw exception depending of the error code. */
-    void _enforceNoError(in Json binanceResponse) const
+    void _enforceNoError(in Json binanceResponse) @safe const
     {
         // do nothing
     }
 
-    Market _findMarket(string marketId)
+    final Market _findMarket(string marketId)
     {
         initialize();
 
@@ -645,7 +647,7 @@ protected:
         return null;
     }
 
-    string _findSymbol(string echangeSymbol, Market market = null)
+    final string _findSymbol(string echangeSymbol, Market market = null)
     {
         if (market is null)
             market = _findMarket(echangeSymbol);
