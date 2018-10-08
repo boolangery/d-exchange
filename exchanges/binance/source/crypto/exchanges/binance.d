@@ -287,18 +287,18 @@ public:
             if ("PRICE_FILTER" in filters) {
                 auto filter = filters["PRICE_FILTER"];
                 entry.precision.price = _precisionFromString(filter["tickSize"].enforceGet!string);
-                entry.limits.price.min = filter["minPrice"].enforceGet!(double, string);
-                entry.limits.price.max = filter["maxPrice"].enforceGet!(double, string);
+                entry.limits.price.min = filter["minPrice"].enforceGet!(float, string);
+                entry.limits.price.max = filter["maxPrice"].enforceGet!(float, string);
             }
             if ("LOT_SIZE" in filters) {
                 auto filter = filters["LOT_SIZE"];
                 entry.precision.amount = _precisionFromString(filter["stepSize"].enforceGet!string);
-                entry.limits.amount.min = filter["minQty"].enforceGet!(double, string);
-                entry.limits.amount.max = filter["minQty"].enforceGet!(double, string);
+                entry.limits.amount.min = filter["minQty"].enforceGet!(float, string);
+                entry.limits.amount.max = filter["minQty"].enforceGet!(float, string);
             }
             if ("MIN_NOTIONAL" in filters) {
                 auto filter = filters["MIN_NOTIONAL"];
-                entry.limits.cost.min = filter["minNotional"].enforceGet!(double, string);
+                entry.limits.cost.min = filter["minNotional"].enforceGet!(float, string);
             }
             result ~= entry;
         }
@@ -318,10 +318,10 @@ public:
 
         OrderBook result = new OrderBook();
         foreach(bid; response["bids"])
-            result.bids ~= Order(bid[1].enforceGet!(double, string), bid[0].enforceGet!(double, string));
+            result.bids ~= Order(bid[1].enforceGet!(float, string), bid[0].enforceGet!(float, string));
 
         foreach(ask; response["asks"])
-            result.asks ~= Order(ask[1].enforceGet!(double, string), ask[0].enforceGet!(double, string));
+            result.asks ~= Order(ask[1].enforceGet!(float, string), ask[0].enforceGet!(float, string));
 
         return result;
     }

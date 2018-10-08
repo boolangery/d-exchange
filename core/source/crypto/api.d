@@ -125,8 +125,8 @@ interface IGenericResponse(T)
 /** Represent a min/max range. */
 struct Range
 {
-    double min;
-    double max;
+    float min;
+    float max;
 }
 
 /** Market limits. */
@@ -191,13 +191,13 @@ class Market
     Limits limits = {
         amount: {
             min: 0,
-            max: double.max},
+            max: float.max},
         price: {
             min: 0,
-            max: double.max},
+            max: float.max},
         cost: {
             min: 0,
-            max: double.max}
+            max: float.max}
     };
 
     /// Raw json response as returned by the API
@@ -207,8 +207,8 @@ class Market
 /** Represent an order. */
 struct Order
 {
-    double amount;
-    double price;
+    float amount;
+    float price;
 }
 
 /** Represent a generic order book. */
