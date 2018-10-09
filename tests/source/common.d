@@ -6,7 +6,7 @@
 */
 module common;
 
-import crypto.api : Credentials;
+import crypto.exchanges.core.api : Credentials;
 import std.experimental.logger;
 
 public import unit_threaded;
@@ -48,7 +48,7 @@ TestConfiguration[string] getTestConfig() {
     import std.traits;
     import vibe.data.json;
 
-    import crypto.api : Exchanges;
+    import crypto.exchanges.core.api : Exchanges;
 
     immutable FileName = "./apiConfigs.json";
 

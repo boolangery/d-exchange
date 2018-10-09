@@ -1,4 +1,4 @@
-module crypto.exceptions;
+module crypto.exchanges.core.exceptions;
 
 
 /// Base class for all exception.

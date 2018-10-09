@@ -1,7 +1,7 @@
-module crypto.utils;
+module crypto.exchanges.core.utils;
 
 
-public import crypto.utils.json;
+public import crypto.exchanges.core.utils.json;
 
 
 /** Transform an array to an associative array by indexing the initial array

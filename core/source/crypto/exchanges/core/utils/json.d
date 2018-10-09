@@ -1,13 +1,13 @@
 /**
     This module contains json utils.
 */
-module crypto.utils.json;
+module crypto.exchanges.core.utils.json;
 
 
 public import vibe.data.json : Json;
 public import std.conv : to;
 
-import crypto.exceptions;
+import crypto.exchanges.core.exceptions;
 
 /// Take an Json array of object, and return an associative array
 /// indexed by an object field.

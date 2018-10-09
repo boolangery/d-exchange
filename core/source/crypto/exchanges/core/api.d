@@ -4,7 +4,7 @@
     It contains unified exchange objects and allow to implement new
     exchanges based on this model.
 */
-module crypto.api;
+module crypto.exchanges.core.api;
 
 import vibe.http.client;
 import vibe.stream.operations;
@@ -13,9 +13,9 @@ import std.typecons;
 import std.container;
 import std.experimental.logger;
 
-public import crypto.exceptions;
-public import crypto.utils;
-public import url : URLD = URL;
+public import crypto.exchanges.core.exceptions;
+public import crypto.exchanges.core.utils;
+public import url : URLD = URL, parseURL;
 public import std.algorithm: canFind;
 public import std.datetime : DateTime;
 public import std.range.primitives : empty;
@@ -628,7 +628,7 @@ protected:
         }
     }
 
-    abstract long _fetchServerMillisTimestamp() @safe;
+    long _fetchServerMillisTimestamp() @safe { return getMillisTimestamp(); }
 
     /** Ensure no error in a binance json response.
     It throw exception depending of the error code. */

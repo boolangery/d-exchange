@@ -8,11 +8,10 @@ import vibe.data.json;
 import vibe.data.bson;
 import vibe.http.common;
 import url;
-import crypto.api;
 import std.experimental.logger;
 
-public import crypto.coins;
-public import crypto.api;
+public import crypto.exchanges.core.coins;
+public import crypto.exchanges.core.api;
 
 struct TradingPair
 {
@@ -266,7 +265,7 @@ public:
             if (market["symbol"] == "123456")
                 continue;
 
-            Json[string] filters = crypto.utils.json.indexBy(market["filters"], "filterType");
+            Json[string] filters = crypto.exchanges.core.utils.json.indexBy(market["filters"], "filterType");
 
             auto entry = new Market();
             entry.id = market["symbol"].enforceGetStr;

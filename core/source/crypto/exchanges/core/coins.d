@@ -1,4 +1,4 @@
-module crypto.coins;
+module crypto.exchanges.core.coins;
 
 
 struct Coin
