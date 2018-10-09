@@ -31,3 +31,14 @@ long getMillisTimestamp() @safe
     auto now = Clock.currTime;
     return now.toUnixTime() * 1000 + now.fracSecs.total!"msecs";
 }
+
+/** Reverse an associative array. */
+K[V] reverse(V, K)(in V[K] aa)
+{
+    K[V] result;
+
+    foreach(k, v; aa)
+        result[v] = k;
+
+    return result;
+}

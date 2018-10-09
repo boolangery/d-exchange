@@ -374,6 +374,24 @@ struct Configuration
     bool substituteCommonCurrencyCodes = true;
 }
 
+enum TimeInForce
+{
+    goodTillCancelled,
+    gtc = goodTillCancelled,
+}
+
+/** Informations for placing a new order. */
+struct NewOrder
+{
+    string symbol;
+    OrderType type;
+    TradeDirection side;
+    Nullable!TimeInForce timeInForce;
+    float amount;
+    Nullable!float price;
+    Nullable!float stopLoss;
+}
+
 /** Represents the unified exchange API.
 
 Symbols And Market Ids:
@@ -398,6 +416,8 @@ Symbols And Market Ids:
 */
 interface IExchange
 {
+    import std.traits : EnumMembers;
+
     /** Is the exhange inititialized ?
     You can call initialize() to force exchange initialization or it will be initialized
     automaticaly when needed. */
@@ -416,6 +436,7 @@ interface IExchange
     @property bool hasFetchTrades();     /// Is `fetchTrades` supported ?
     @property bool hasFetchBalance();    /// Is `fetchBalance` supported ?
     @property bool hasFetchOpenOrders(); /// Is `fetchOpenOrders` supported ?
+    @property bool hasCreateOrder(OrderType type); // Is this order type supported ?
 
     void initialize();
 
@@ -456,6 +477,22 @@ interface IExchange
     /** Fetch account open orders
     Supported if `hasFetchOpenOrders` is true. */
     FullOrder[] fetchOpenOrders(string symbol);
+
+    void createLimitOrder(string symbol, TradeDirection side, TimeInForce timeInForce, float amount, float price);
+
+    void createMarketOrder(string symbol, TradeDirection side, float amount);
+
+    void createStopLossOrder(string symbol, TradeDirection side, float amount, float stopLoss);
+
+    void createStopLossLimitOrder(string symbol, TradeDirection side, TimeInForce timeInForce,
+        float amount, float price, float stopLoss);
+
+    void createTakeProfitOrder(string symbol, TradeDirection side, float amount, float stopLoss);
+
+    void createTakeProfitLimitOrder(string symbol, TradeDirection side, TimeInForce timeInForce, float amount,
+    float price, float stopLoss);
+
+    void createLimitMaker(string symbol, TradeDirection side, float amount, float price);
 }
 
 /** Base class for implementing a new exchange.
@@ -470,6 +507,8 @@ protected:
     Nullable!ExchangeConfiguration _userConfig;
     long _serverTime; /// Server unix timestamp
     long _timeDiffMs; /// Time difference in millis
+
+    alias enforceExchange = enforce!ExchangeException;
 
 private:
     CacheManager _cache;
@@ -500,6 +539,7 @@ public /*properties*/:
     @property bool hasFetchTrades() { return _hasFetchTrades; }
     @property bool hasFetchBalance() { return _hasFetchBalance; }
     @property bool hasFetchOpenOrders() { return _hasFetchOpenOrders; }
+    @property bool hasCreateOrder(OrderType type) { return false; }
 
 public:
     /// Constructor.
@@ -568,6 +608,109 @@ public:
     CurrencyBalance[string] fetchBalance(bool hideZero = true) { throw new ExchangeException("not supported"); }
 
     FullOrder[] fetchOpenOrders(string symbol) { throw new ExchangeException("not supported"); }
+
+    final void createLimitOrder(string symbol, TradeDirection side, TimeInForce timeInForce, float amount, float price)
+    {
+        enforceExchange(hasCreateOrder(OrderType.limit), "not supported");
+        _enforceSymbol(symbol);
+        NewOrder order = {
+            symbol: symbol,
+            type: OrderType.limit,
+            side: side,
+            timeInForce: timeInForce,
+            amount: amount,
+            price: price
+        };
+        _createOrder(order);
+    }
+
+    final void createMarketOrder(string symbol, TradeDirection side, float amount)
+    {
+        enforceExchange(hasCreateOrder(OrderType.market), "not supported");
+        _enforceSymbol(symbol);
+        NewOrder order = {
+            symbol: symbol,
+            type: OrderType.market,
+            side: side,
+            amount: amount,
+        };
+        _createOrder(order);
+    }
+
+    final void createStopLossOrder(string symbol, TradeDirection side, float amount, float stopLoss)
+    {
+        enforceExchange(hasCreateOrder(OrderType.stopLoss), "not supported");
+        _enforceSymbol(symbol);
+        NewOrder order = {
+            symbol: symbol,
+            type: OrderType.stopLoss,
+            side: side,
+            amount: amount
+        };
+        _createOrder(order);
+    }
+
+    final void createStopLossLimitOrder(string symbol, TradeDirection side, TimeInForce timeInForce,
+        float amount, float price, float stopLoss)
+    {
+        enforceExchange(hasCreateOrder(OrderType.stopLossLimit), "not supported");
+        _enforceSymbol(symbol);
+        NewOrder order = {
+            symbol: symbol,
+            type: OrderType.stopLossLimit,
+            side: side,
+            timeInForce: timeInForce,
+            amount: amount,
+            price: price,
+            stopLoss: stopLoss
+        };
+        _createOrder(order);
+    }
+
+    final void createTakeProfitOrder(string symbol, TradeDirection side, float amount, float stopLoss)
+    {
+        enforceExchange(hasCreateOrder(OrderType.takeProfit), "not supported");
+        _enforceSymbol(symbol);
+        NewOrder order = {
+            symbol: symbol,
+            type: OrderType.takeProfit,
+            side: side,
+            amount: amount,
+            stopLoss: stopLoss
+        };
+        _createOrder(order);
+    }
+
+    final void createTakeProfitLimitOrder(string symbol, TradeDirection side, TimeInForce timeInForce, float amount,
+        float price, float stopLoss)
+    {
+        enforceExchange(hasCreateOrder(OrderType.takeProfitLimit), "not supported");
+        _enforceSymbol(symbol);
+        NewOrder order = {
+            symbol: symbol,
+            type: OrderType.takeProfitLimit,
+            side: side,
+            timeInForce: timeInForce,
+            amount: amount,
+            price: price,
+            stopLoss: stopLoss
+        };
+        _createOrder(order);
+    }
+
+    final void createLimitMaker(string symbol, TradeDirection side, float amount, float price)
+    {
+        enforceExchange(hasCreateOrder(OrderType.limitMaker), "not supported");
+        _enforceSymbol(symbol);
+        NewOrder order = {
+            symbol: symbol,
+            type: OrderType.limitMaker,
+            side: side,
+            amount: amount,
+            price: price,
+        };
+        _createOrder(order);
+    }
 
 protected:
     /// Configure the api.
@@ -677,7 +820,7 @@ protected:
     /// Ensure symbol existance is a generic cay.
     void _enforceSymbol(string symbol)
     {
-        enforce!ExchangeException(symbol in markets, "No market symbol " ~ symbol);
+        enforceExchange(symbol in markets, "No market symbol " ~ symbol);
     }
 
     string _candlestickIntervalToStr(CandlestickInterval interval) const
@@ -726,6 +869,11 @@ protected:
         if (market is null)
             market = _findMarket(echangeSymbol);
         return market.symbol;
+    }
+
+    void _createOrder(NewOrder order)
+    {
+
     }
 
 private:
