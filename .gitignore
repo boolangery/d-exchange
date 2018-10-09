@@ -8,3 +8,5 @@ libcrypto-boot.a
 crypto.iml
 libexchanges.a
 dub.selections.json
+docs.json
+docs

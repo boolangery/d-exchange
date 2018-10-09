@@ -7,7 +7,6 @@ import std.container;
 import vibe.data.json;
 import vibe.data.bson;
 import vibe.http.common;
-import url;
 import std.experimental.logger;
 
 public import crypto.exchanges.core.coins;
@@ -60,7 +59,7 @@ class BinanceExchange: Exchange
     import std.math : pow, log10;
 
 private /*constants*/:
-    immutable string BaseEndpoint = "https://api.binance.com";
+    URLD BaseUrl = parseURL("https://api.binance.com");
     immutable string WsEndpoint = "wss://stream.binance.com:9443";
     /// last part of signed enpoints
     static immutable SignedEndpoints = ["order", "account", "openOrders"];
@@ -102,7 +101,6 @@ private /*constants*/:
     }
 
 private:
-    URLD BaseUrl = parseURL("https://api.binance.com");
     CandleListener[string] _candleListeners;
     WebSocket _currentWebSocket;
 
