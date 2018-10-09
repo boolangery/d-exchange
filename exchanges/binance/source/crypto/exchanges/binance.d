@@ -25,11 +25,13 @@ private /*constants*/:
     URLD BaseUrl = parseURL("https://api.binance.com");
     immutable string WsEndpoint = "wss://stream.binance.com:9443";
     /// last part of signed enpoints
-    static immutable SignedEndpoints = ["order", "account", "openOrders"];
+    static immutable SignedEndpoints = ["order", "account", "openOrders", "order"];
     static immutable int[int] DepthValidLimitByWeight;
     static immutable OrderStatus[string] OrderStatusToStd;
     static immutable OrderType[string] OrderTypeToStd;
+    static immutable string[OrderType] StdToOrderType;
     static immutable TradeDirection[string] TradeDirectionToStd;
+    static immutable string[TradeDirection] StdToTradeDirection;
 
     static this()
     {
@@ -61,6 +63,15 @@ private /*constants*/:
         TradeDirectionToStd = [
             "BUY":  TradeDirection.buy,
             "SELL": TradeDirection.sell];
+
+        StdToOrderType = OrderTypeToStd.reverse;
+        StdToTradeDirection = TradeDirectionToStd.reverse;
+    }
+
+public /*properties*/:
+    override @property bool hasCreateOrder(OrderType type)
+    {
+        return true; // all order type are enabled
     }
 
 private:
@@ -266,7 +277,7 @@ public:
     override OrderBook fetchOrderBook(string symbol, int limit=100)
     {
         _enforceSymbol(symbol);
-        enforce!ExchangeException(limit in DepthValidLimitByWeight, "Not a valid exchange limit " ~ limit.to!string);
+        enforceExchange(limit in DepthValidLimitByWeight, "Not a valid exchange limit " ~ limit.to!string);
 
         URLD endpoint = BaseUrl;
         endpoint.path = "/api/v1/depth";
@@ -430,5 +441,77 @@ public:
             result ~= entry;
         }
         return result;
+    }
+
+
+    override void _createOrder(NewOrder order)
+    {
+        URLD endpoint = BaseUrl;
+        endpoint.path = "/api/v3/order";
+
+        endpoint.queryParams.add("symbol", markets[order.symbol].id);
+        endpoint.queryParams.add("side", StdToTradeDirection[order.side]);
+        endpoint.queryParams.add("type", StdToOrderType[order.type]);
+
+
+        final switch(order.type) {
+            case OrderType.undefined:
+                break;
+
+            case OrderType.market:
+                endpoint.queryParams.add("quantity", order.amount.to!string);
+                break;
+
+            case OrderType.limit:
+                enforceExchange(!order.timeInForce.isNull, "timeInForce must not be null");
+                enforceExchange(!order.price.isNull, "price must not be null");
+                endpoint.queryParams.add("timeInForce", "GTC"); // Good Till Cancelled
+                endpoint.queryParams.add("price", order.price.to!string);
+                endpoint.queryParams.add("quantity", order.amount.to!string);
+                break;
+
+            case OrderType.stopLoss:
+                enforceExchange(!order.stopLoss.isNull, "stopLoss must not be null");
+                endpoint.queryParams.add("quantity", order.amount.to!string);
+                endpoint.queryParams.add("stopPrice", order.stopLoss.to!string);
+                break;
+
+            case OrderType.stopLossLimit:
+                enforceExchange(!order.timeInForce.isNull, "timeInForce must not be null");
+                enforceExchange(!order.price.isNull, "price must not be null");
+                enforceExchange(!order.stopLoss.isNull, "stopLoss must not be null");
+                endpoint.queryParams.add("timeInForce", "GTC"); // Good Till Cancelled
+                endpoint.queryParams.add("price", order.price.to!string);
+                endpoint.queryParams.add("quantity", order.amount.to!string);
+                endpoint.queryParams.add("stopPrice", order.stopLoss.to!string);
+                break;
+
+            case OrderType.takeProfit:
+                enforceExchange(!order.stopLoss.isNull, "stopLoss must not be null");
+                endpoint.queryParams.add("quantity", order.amount.to!string);
+                endpoint.queryParams.add("stopPrice", order.stopLoss.to!string);
+                break;
+
+            case OrderType.takeProfitLimit:
+                enforceExchange(!order.timeInForce.isNull, "timeInForce must not be null");
+                enforceExchange(!order.price.isNull, "price must not be null");
+                enforceExchange(!order.stopLoss.isNull, "stopLoss must not be null");
+                endpoint.queryParams.add("timeInForce", "GTC"); // Good Till Cancelled
+                endpoint.queryParams.add("price", order.price.to!string);
+                endpoint.queryParams.add("quantity", order.amount.to!string);
+                endpoint.queryParams.add("stopPrice", order.stopLoss.to!string);
+                break;
+
+            case OrderType.limitMaker:
+                enforceExchange(!order.price.isNull, "price must not be null");
+                endpoint.queryParams.add("timeInForce", "GTC"); // Good Till Cancelled
+                endpoint.queryParams.add("price", order.price.to!string);
+                endpoint.queryParams.add("quantity", order.amount.to!string);
+                break;
+        }
+
+        Json response = _jsonHttpRequest(endpoint, HTTPMethod.GET);
+
+        // TODO: parse response
     }
 }
