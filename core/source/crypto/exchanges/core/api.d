@@ -11,10 +11,10 @@ import vibe.stream.operations;
 import vibe.core.log;
 import std.typecons;
 import std.container;
-import std.experimental.logger;
 
 public import crypto.exchanges.core.exceptions;
 public import crypto.exchanges.core.utils;
+public import std.experimental.logger;
 public import url : URLD = URL, parseURL;
 public import std.algorithm: canFind;
 public import std.datetime : DateTime;
@@ -390,6 +390,7 @@ interface IExchange
 */
 abstract class Exchange : IExchange
 {
+    public import vibe.http.client : HTTPMethod;
     import vibe.data.json;
 
 protected:

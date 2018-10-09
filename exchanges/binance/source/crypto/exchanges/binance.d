@@ -1,34 +1,7 @@
 module crypto.exchanges.binance;
 
-import std.conv;
-import std.math;
-import std.string;
-import std.container;
-import vibe.data.json;
-import vibe.data.bson;
-import vibe.http.common;
-import std.experimental.logger;
-
-public import crypto.exchanges.core.coins;
 public import crypto.exchanges.core.api;
 
-struct TradingPair
-{
-    Coin first;
-    Coin second;
-
-    this(Coin f, Coin s)
-    {
-        first = f;
-        second = s;
-    }
-
-    this(string f, string s)
-    {
-        first = Coin[f];
-        second = Coin[s];
-    }
-}
 
 alias CandleListener = void delegate(scope Candlestick);
 
@@ -37,20 +10,6 @@ class CombinedStreamResponse
     string stream;
     Json data;
 }
-
-/** Binance json base response */
-class BinanceResponse
-{
-    @optional BinanceError error;
-}
-
-/** Binance json error response */
-class BinanceError
-{
-    int code;
-    string msg;
-}
-
 
 class BinanceExchange: Exchange
 {
@@ -116,8 +75,9 @@ protected:
     /// Sign a binance secure route.
     override void _signRequest(ref URLD url, out string[string] headers) const @safe
     {
-        import std.string : split;
+        import std.string : split, representation;
         import std.algorithm : canFind;
+        import std.ascii : LetterCase;
 
         // endpoint require signing ?
         if (canFind(SignedEndpoints, url.path.split('/')[$-1])) {
@@ -195,6 +155,7 @@ public:
     void refreshWebSocket(string[] streams)
     {
         import std.array : join;
+        import vibe.data.json;
 
 
         try {
@@ -233,18 +194,14 @@ public:
         });
     }
 
-    private string _tradingPairToString(TradingPair pair)
+    void addCandleListener(string pair, CandleListener listener)
     {
-        return pair.first.symbol ~ pair.second.symbol;
-    }
-
-    void addCandleListener(TradingPair pair, CandleListener listener)
-    {
+        /*
         string pairString = _tradingPairToString(pair);
         string stream = pairString ~ "@depth"; // <symbol>@kline_<interval>
         info(pairString);
         _candleListeners[pairString] = listener;
-        refreshWebSocket([stream]);
+        refreshWebSocket([stream]);*/
     }
 
     override Market[] fetchMarkets()
