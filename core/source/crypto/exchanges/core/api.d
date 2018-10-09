@@ -278,9 +278,32 @@ enum CandlestickInterval
     _3d,    _1w,    _1M
 }
 
-enum OrderType { undefined, market, limit, stopLoss,
-                 stopLossLimit, takeProfit, takeProfitLimit,
-                 limitMaker }
+/// Define an order type.
+enum OrderType
+{
+    undefined, /// Order type if undefined
+    /// A market order is a buy or sell order to be executed immediately at current market prices.
+    market,
+    /** A limit order is an order to buy a security at no more than a specific price,
+    or to sell a security at no less than a specific price (called "or better" for either
+    direction). */
+    limit,
+    /** A stop order, also referred to as a stop-loss order, is an order to buy or sell
+    a stock once the price of the stock reaches a specified price, known as the stop price.
+    When the stop price is reached, a stop order becomes a market order. */
+    stopLoss,
+    /** A stop–limit order is an order to buy or sell a stock that combines the features of
+    a stop order and a limit order.  */
+    stopLossLimit,
+    /** A take-profit order (T/P) is a type of limit order that specifies the exact price
+    at which to close out an open position for a profit. */
+    takeProfit,
+    /** Triggers a limit order (buy or sell) when the last price hits the profit price. */
+    takeProfitLimit,
+    /** If you place a buy order at a price below all of the pending sell orders, it will
+     be pending. */
+    limitMaker
+}
 
 
 enum TradeDirection { buy, sell }
@@ -300,10 +323,12 @@ class Trade
      float amount;        /// amount of base currency
 }
 
+/** Represents a currency balance. */
 class CurrencyBalance
 {
-    float free;
-    float used;
+    float free; /// Available balance
+    float used; /// Used or locked balance.
+    /// Total balance.
     @property float total() { return free + used; }
 }
 
@@ -327,15 +352,16 @@ class FullOrder
     Json info; /// the original unparsed order structure as is
 }
 
+/// Define an order status.
 enum OrderStatus { open, closed, canceled };
 
+/// Order fee.
 class OrderFee
 {
     string currency; /// which currency the fee is (usually quote)
     float cost; /// the fee amount in that currency
     float rate; /// the fee rate (if available)
 }
-
 
 /** Api configuration. */
 struct Configuration
@@ -348,41 +374,87 @@ struct Configuration
     bool substituteCommonCurrencyCodes = true;
 }
 
+/** Represents the unified exchange API.
+
+Symbols And Market Ids:
+    Market ids are used during the REST request-response process to reference trading pairs
+    within exchanges. The set of market ids is unique per exchange and cannot be used across
+    exchanges. For example, the BTC/USD pair/market may have different ids on various popular
+    exchanges, like btcusd, BTCUSD, XBTUSD, btc/usd, 42 (numeric id), BTC/USD, Btc/Usd,
+    tBTCUSD, XXBTZUSD. You don't need to remember or use market ids, they are there for
+    internal HTTP request-response purposes inside exchange implementations.
+
+    The library abstracts uncommon market ids to symbols, standardized to a common format.
+    Symbols aren't the same as market ids. Every market is referenced by a corresponding symbol.
+    Symbols are common across exchanges which makes them suitable for arbitrage and many other
+    things.
+
+    A symbol is usually an uppercase string literal name for a pair of traded currencies
+    with a slash in between. A currency is a code of three or four uppercase letters,
+    like BTC, ETH, USD, GBP, CNY, LTC, JPY, DOGE, RUB, ZEC, XRP, XMR, etc. Some exchanges
+    have exotic currencies with longer names. The first currency before the slash is usually
+    called base currency, and the one after the slash is called quote currency. Examples of
+    a symbol are: BTC/USD, DOGE/LTC, ETH/EUR, DASH/XRP, BTC/CNY, ZEC/XMR, ETH/JPY.
+*/
 interface IExchange
 {
+    /** Is the exhange inititialized ?
+    You can call initialize() to force exchange initialization or it will be initialized
+    automaticaly when needed. */
     @property bool initialized();
+    /// Markets indexed by unified symbol.
     @property Market[string] markets();
+    /// Markets indexed by exchange id.
     @property Market[string] marketsById();
+    /// Available exchange symbols.
     @property string[] symbols();
+    /// Exchange ids.
     @property string[] exchangeIds();
-    @property bool hasFetchOrderBook();
-    @property bool hasFetchTicker();
-    @property bool hasFetchOhlcv();
-    @property bool hasFetchTrades();
-    @property bool hasFetchBalance();
-    @property bool hasFetchOpenOrders();
+    @property bool hasFetchOrderBook();  /// Is `fetchOrderBook` supported ?
+    @property bool hasFetchTicker();     /// Is `fetchTicker` supported ?
+    @property bool hasFetchOhlcv();      /// Is `fetchOhlcv` supported ?
+    @property bool hasFetchTrades();     /// Is `fetchTrades` supported ?
+    @property bool hasFetchBalance();    /// Is `fetchBalance` supported ?
+    @property bool hasFetchOpenOrders(); /// Is `fetchOpenOrders` supported ?
 
     void initialize();
 
-    /// Fetch market informations.
+    /** Fetches a list of all available markets from an exchange and returns an array of
+    markets (objects with properties such as symbol, base, quote etc.).
+    Some exchanges do not have means for obtaining a list of markets via their online API. */
     Market[] fetchMarkets();
 
-    /// Fetch order book. Supported if hasFetchMarkets is true.
+    /** Exchanges expose information on open orders with bid (buy) and ask (sell) prices,
+    volumes and other data. Usually there is a separate endpoint for querying current state
+    (stack frame) of the order book for a particular market. An order book is also often
+    called market depth. The order book information is used in the trading decision making
+    process.
+    Supported if `hasFetchOrderBook` is true. */
     OrderBook fetchOrderBook(string symbol, int limit);
 
-    /// Fetch 24h ticker. Supported if hasFetchTicker is true.
+    /** Fetch latest ticker data by trading symbol.
+    Supported if `hasFetchTicker` is true. */
     PriceTicker fetchTicker(string symbol);
 
-    /// Fetch OHLCV data.
+    /** Fetch OHLCV data.
+    Supported if `hasFetchOhlcv` is true. */
     Candlestick[] fetchOhlcv(string symbol, CandlestickInterval interval, int limit);
 
+    /** Returns the list of markets as an object indexed by symbol and caches it with the
+    exchange instance. Returns cached markets if loaded already, unless the reload = true f
+    lag is forced. */
     Market[string] loadMarkets(bool reload=false);
 
-    /// Fetch trade informations.
+    /** Fetch trade informations.
+    Supported if `hasFetchTrades` is true. */
     Trade[] fetchTrades(string symbol, int limit);
 
+    /** Fetch account Balance.
+    Supported if `hasFetchBalance` is true. */
     CurrencyBalance[string] fetchBalance(bool hideZero = true);
 
+    /** Fetch account open orders
+    Supported if `hasFetchOpenOrders` is true. */
     FullOrder[] fetchOpenOrders(string symbol);
 }
 

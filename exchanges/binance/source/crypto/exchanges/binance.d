@@ -1,3 +1,6 @@
+/**
+    Binance API.
+*/
 module crypto.exchanges.binance;
 
 public import crypto.exchanges.core.api;
@@ -11,6 +14,7 @@ class CombinedStreamResponse
     Json data;
 }
 
+/** Binance exchange. */
 class BinanceExchange: Exchange
 {
     import vibe.inet.url : URL;
