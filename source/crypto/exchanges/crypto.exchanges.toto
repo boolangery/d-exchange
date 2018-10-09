@@ -1,0 +1,21 @@
+module crypto.exchanges.toto;
+
+import std.stdio;
+
+class toto {
+
+    this() {
+    }
+
+    ~this() {
+    }
+
+    override size_t toHash() {
+        // todo
+    }
+
+    override string toString() {
+        // todo: make a useful toString()
+    }
+}
+
