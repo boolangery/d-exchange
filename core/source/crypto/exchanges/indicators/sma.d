@@ -14,9 +14,9 @@ class SMA : Indicator
 
 private:
     int _windowLength;
-    float[] data;
-    float sum = 0f;
-    int index, nFilled;
+    float[] _data;
+    float _sum = 0f;
+    int _index, _nFilled;
 
 public:
     this(int windowLength)
@@ -24,17 +24,17 @@ public:
         import std.algorithm.mutation : fill;
 
         _windowLength = windowLength;
-        data.length = _windowLength;
-        data.fill(0);
+        _data.length = _windowLength;
+        _data.fill(0);
     }
 
     override float update(in float v) pure nothrow @safe @nogc
     {
-        sum += -data[index] + v;
-        data[index] = v;
-        index = (index + 1) % _windowLength;
-        nFilled = min(_windowLength, nFilled + 1);
-        return sum / nFilled;
+        _sum += -_data[_index] + v;
+        _data[_index] = v;
+        _index = (_index + 1) % _windowLength;
+        _nFilled = min(_windowLength, _nFilled + 1);
+        return _sum / _nFilled;
     }
 }
 
