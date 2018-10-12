@@ -1,7 +1,7 @@
 /**
     Smoothed Simple Moving Average.
 */
-module crypto.exchanges.indicators.ssma;
+module crypto.exchanges.indicators.smma;
 
 
 import crypto.exchanges.indicators;
@@ -45,6 +45,7 @@ public:
     }
 }
 
+///
 unittest
 {
     import std.algorithm.comparison : equal;
