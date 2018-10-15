@@ -6,8 +6,6 @@ module crypto.exchanges.binance;
 public import crypto.exchanges.core.api;
 
 
-alias CandleListener = void delegate(scope Candlestick);
-
 class CombinedStreamResponse
 {
     string stream;
@@ -69,7 +67,7 @@ private /*constants*/:
     }
 
 public /*properties*/:
-
+    @property bool hasAddCandleListener(this T)() { return true; }
 
 private:
     CandleListener[string] _candleListeners;
@@ -206,7 +204,7 @@ public:
         });
     }
 
-    void addCandleListener(string pair, CandleListener listener)
+    void addCandleListener(string symbol, CandleListener listener)
     {
         /*
         string pairString = _tradingPairToString(pair);

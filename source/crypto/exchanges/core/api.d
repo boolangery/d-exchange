@@ -269,6 +269,8 @@ public:
     }
 }
 
+alias CandleListener = void delegate(scope Candlestick);
+
 /// Candlestick time interval.
 enum CandlestickInterval
 {
@@ -426,6 +428,7 @@ interface IExchange
     @property bool hasFetchBalance(this T)();    /// Is `fetchBalance` supported ?
     @property bool hasFetchOpenOrders(this T)(); /// Is `fetchOpenOrders` supported ?
     @property bool hasCreateOrder(OrderType type)(); /// Is this order type supported ?
+    @property bool hasAddCandleListener(this T)();
 
     alias hasCreateLimitOrder = hasCreateOrder!(OrderType.limit);
     alias hasCreateMarketOrder = hasCreateOrder!(OrderType.market);
@@ -475,21 +478,31 @@ interface IExchange
     Supported if `hasFetchOpenOrders` is true. */
     FullOrder[] fetchOpenOrders(string symbol);
 
+    /// Create a limit order.
     void createLimitOrder(string symbol, TradeDirection side, TimeInForce timeInForce, float amount, float price);
 
+    /// Create a market order.
     void createMarketOrder(string symbol, TradeDirection side, float amount);
 
+    /// Create a stop loss order.
     void createStopLossOrder(string symbol, TradeDirection side, float amount, float stopLoss);
 
+    /// Create a stop loss limit order.
     void createStopLossLimitOrder(string symbol, TradeDirection side, TimeInForce timeInForce,
         float amount, float price, float stopLoss);
 
+    /// Create take profit order.
     void createTakeProfitOrder(string symbol, TradeDirection side, float amount, float stopLoss);
 
+    /// Create take profit limit order.
     void createTakeProfitLimitOrder(string symbol, TradeDirection side, TimeInForce timeInForce, float amount,
-    float price, float stopLoss);
+        float price, float stopLoss);
 
+    /// Create limit market order.
     void createLimitMakerOrder(string symbol, TradeDirection side, float amount, float price);
+
+    /// A a candlestick listener.
+    void addCandleListener(string symbol, CandleListener listener);
 }
 
 /** Base class for implementing a new exchange.
@@ -629,7 +642,7 @@ protected:
     Request can be signed with header or by modifying the url */
     void _signRequest(ref URLD url, out string[string] headers) const @safe
     {
-
+        // do nothing
     }
 
     /** Performs a synchronous HTTP request on the specified URL,
