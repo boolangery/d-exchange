@@ -21,6 +21,7 @@ public import std.datetime : DateTime;
 public import std.range.primitives : empty;
 public import std.exception : enforce;
 public import std.typecons : Nullable;
+public import std.string : format;
 
 enum Exchanges
 {
@@ -558,6 +559,9 @@ public /*properties*/:
         }
     }
 
+    // public constants
+    static immutable string[CandlestickInterval] CandlestickIntervalToStr;
+
 public:
     /// Constructor.
     this(this T)(Credentials credential, ExchangeConfiguration config = null)
@@ -625,9 +629,33 @@ public:
     void createStopLossLimitOrder(string symbol, TradeDirection side, TimeInForce timeInForce,float amount, float price, float stopLoss)  { throw new ExchangeException("not supported"); }
     void createTakeProfitOrder(string symbol, TradeDirection side, float amount, float stopLoss)  { throw new ExchangeException("not supported"); }
     void createTakeProfitLimitOrder(string symbol, TradeDirection side, TimeInForce timeInForce, float amount, float price, float stopLoss)  { throw new ExchangeException("not supported"); }
-    void createLimitMakerOrder(string symbol, TradeDirection side, float amount, float price)  { throw new ExchangeException("not supported"); }
+    void createLimitMakerOrder(string symbol, TradeDirection side, float amount, float price) { throw new ExchangeException("not supported"); }
+
+    void addCandleListener(string symbol, CandleListener listener) { throw new ExchangeException("not supported"); }
 
 protected:
+    /// Static constructor.
+    static this()
+    {
+        CandlestickIntervalToStr = [
+            CandlestickInterval._1m:  "1m",
+            CandlestickInterval._3m:  "3m",
+            CandlestickInterval._5m:  "5m",
+            CandlestickInterval._15m: "15m",
+            CandlestickInterval._30m: "30m",
+            CandlestickInterval._1h:  "1h",
+            CandlestickInterval._2h:  "2h",
+            CandlestickInterval._4h:  "4h",
+            CandlestickInterval._6h:  "6h",
+            CandlestickInterval._8h:  "8h",
+            CandlestickInterval._12h: "12h",
+            CandlestickInterval._1d:  "1d",
+            CandlestickInterval._3d:  "3d",
+            CandlestickInterval._1w:  "1w",
+            CandlestickInterval._1M:  "1M"
+        ];
+    }
+
     /// Configure the api.
     abstract void _configure(ref Configuration config);
 
@@ -740,23 +768,7 @@ protected:
 
     string _candlestickIntervalToStr(CandlestickInterval interval) const
     {
-        final switch (interval) {
-            case CandlestickInterval._1m:   return "1m";
-            case CandlestickInterval._3m:   return "3m";
-            case CandlestickInterval._5m:   return "5m";
-            case CandlestickInterval._15m:  return "15m";
-            case CandlestickInterval._30m:  return "30m";
-            case CandlestickInterval._1h:   return "1h";
-            case CandlestickInterval._2h:   return "2h";
-            case CandlestickInterval._4h:   return "4h";
-            case CandlestickInterval._6h:   return "6h";
-            case CandlestickInterval._8h:   return "8h";
-            case CandlestickInterval._12h:  return "12h";
-            case CandlestickInterval._1d:   return "1d";
-            case CandlestickInterval._3d:   return "3d";
-            case CandlestickInterval._1w:   return "1w";
-            case CandlestickInterval._1M:   return "1M";
-        }
+        return CandlestickIntervalToStr[interval];
     }
 
     long _fetchServerMillisTimestamp() @safe { return getMillisTimestamp(); }

@@ -12,6 +12,55 @@ class CombinedStreamResponse
     Json data;
 }
 
+/// Represents a combined stream.
+/// Combined streams are accessed at:
+///     stream?streams=<streamName1>/<streamName2>/<streamName3>
+interface ICombinedStream
+{
+    string toString() const @safe;
+}
+
+/// The Aggregate Trade Streams push trade information that is aggregated
+/// for a single taker order.
+class AggregateTradeStream : ICombinedStream
+{
+    string symbol;
+
+    this(string symbol)
+    {
+        this.symbol = symbol;
+    }
+
+    override string toString() const @safe
+    {
+        return format("%s@aggTrade", symbol);
+    }
+}
+
+/// The Trade Streams push raw trade information; each trade has a unique
+/// buyer and seller.
+class TradeStream : AggregateTradeStream
+{
+    this(string symbol) { super(symbol); }
+}
+
+/// The Kline/Candlestick Stream push updates to the current klines/candlestick every second.
+class CandlestickStream : AggregateTradeStream
+{
+    CandlestickInterval interval;
+
+    this(string symbol, CandlestickInterval interval)
+    {
+        super(symbol);
+        this.interval = interval;
+    }
+
+    override string toString() const @safe
+    {
+        return format("%s@kline_%s", symbol, Exchange.CandlestickIntervalToStr[interval]);
+    }
+}
+
 /** Binance exchange. */
 class BinanceExchange: Exchange
 {
@@ -145,24 +194,8 @@ protected:
         }
     }
 
-public:
-    this(Credentials credential, ExchangeConfiguration config = null)
-    {
-        super(credential, config);
-    }
-
-    void connect()
-    {
-
-    }
-
-    override void _configure(ref Configuration config)
-    {
-
-    }
-
     /// Refresh websocket connection with stream list.
-    void refreshWebSocket(string[] streams)
+    void _refreshWebSocket(string[] streams)
     {
         import std.array : join;
         import vibe.data.json;
@@ -204,14 +237,33 @@ public:
         });
     }
 
-    void addCandleListener(string symbol, CandleListener listener)
+public:
+    this(Credentials credential, ExchangeConfiguration config = null)
     {
+        super(credential, config);
+    }
+
+    void connect()
+    {
+
+    }
+
+    override void _configure(ref Configuration config)
+    {
+
+    }
+
+    override void addCandleListener(string symbol, CandleListener listener)
+    {
+        _enforceSymbol(symbol);
+        auto binanceSymbol = markets[symbol].id;
+
         /*
         string pairString = _tradingPairToString(pair);
         string stream = pairString ~ "@depth"; // <symbol>@kline_<interval>
         info(pairString);
         _candleListeners[pairString] = listener;
-        refreshWebSocket([stream]);*/
+        _refreshWebSocket([stream]);*/
     }
 
     override Market[] fetchMarkets()
