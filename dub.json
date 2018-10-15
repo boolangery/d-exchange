@@ -1,24 +1,20 @@
 {
-	"name": "exchanges",
+	"name": "crypto",
 	"authors": ["Eliott Dumeix"],
 	"description": "Cryptocurrencies exchange API",
 	"license": "MIT",
 	"targetType": "library",
 
-	"subPackages": [
-		"core",
-		"tools/export_currencies",
-		"exchanges/bittrex",
-		"exchanges/binance",
-	],
-
 	"dependencies": {
-		":export_currencies": "*",
-		":bittrex": "*",
-		":binance": "*"
+		"urld": "~>2.1.1",
+		"vibe-d:http": "~>0.8.4"
 	},
 
-	"-ddoxFilterArgs": [
-		"--unittest-examples"
+	"versions": [
+		"VibeUseOpenSSL11"
+	],
+
+	"excludedSourceFiles": [
+		"source/crypto/exchanges/bittrex.d"
 	]
 }

@@ -1,12 +1,10 @@
 .dub/
-crypto-boot-test-library
-unittest.conf
 .idea/
-crypto-boot.iml
 dub.dsl
 libcrypto-boot.a
 crypto.iml
-libexchanges.a
 dub.selections.json
 docs.json
 docs
+exchanges.iml
+libcrypto.a

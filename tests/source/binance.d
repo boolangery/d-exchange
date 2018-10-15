@@ -17,9 +17,11 @@ static this()
 @SingleThreaded
 @Name("test")
 unittest {
-    Credentials creds;
-    auto binance = new BinanceExchange(creds);
+    auto binance = new BinanceExchange(_binanceCredentials);
     // auto markets = binance.fetchMarkets();
 
-    binance.fetchBalance();
+    writelnUt(binance.hasCreateOrder(OrderType.market));
+    writelnUt(binance.hasCreateOrder(OrderType.limit));
+    writelnUt(binance.hasCreateOrder(OrderType.stopLoss));
+    //binance.fetchBalance();
 }

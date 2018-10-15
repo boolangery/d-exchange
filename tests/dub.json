@@ -8,7 +8,7 @@
 		"targetType": "executable",
 
 		"dependencies": {
-			"exchanges:binance": {"path": "../"},
+			"crypto": {"path": "../"},
 			"unit-threaded": "*"
 		},
 
