@@ -14,7 +14,7 @@ public:
         float[] result;
 
         foreach(price; prices)
-            result ~= update(price);;
+            result ~= update(price);
 
         return result;
     }

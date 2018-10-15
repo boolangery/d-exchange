@@ -69,10 +69,7 @@ private /*constants*/:
     }
 
 public /*properties*/:
-    override @property bool hasCreateOrder(OrderType type)
-    {
-        return true; // all order type are enabled
-    }
+
 
 private:
     CandleListener[string] _candleListeners;
@@ -443,7 +440,7 @@ public:
         return result;
     }
 
-
+/*
     override void _createOrder(NewOrder order)
     {
         URLD endpoint = BaseUrl;
@@ -513,5 +510,5 @@ public:
         Json response = _jsonHttpRequest(endpoint, HTTPMethod.GET);
 
         // TODO: parse response
-    }
+    }*/
 }

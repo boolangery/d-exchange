@@ -380,17 +380,6 @@ enum TimeInForce
     gtc = goodTillCancelled,
 }
 
-/** Informations for placing a new order. */
-struct NewOrder
-{
-    string symbol;
-    OrderType type;
-    TradeDirection side;
-    Nullable!TimeInForce timeInForce;
-    float amount;
-    Nullable!float price;
-    Nullable!float stopLoss;
-}
 
 /** Represents the unified exchange API.
 
@@ -430,13 +419,21 @@ interface IExchange
     @property string[] symbols();
     /// Exchange ids.
     @property string[] exchangeIds();
-    @property bool hasFetchOrderBook();  /// Is `fetchOrderBook` supported ?
-    @property bool hasFetchTicker();     /// Is `fetchTicker` supported ?
-    @property bool hasFetchOhlcv();      /// Is `fetchOhlcv` supported ?
-    @property bool hasFetchTrades();     /// Is `fetchTrades` supported ?
-    @property bool hasFetchBalance();    /// Is `fetchBalance` supported ?
-    @property bool hasFetchOpenOrders(); /// Is `fetchOpenOrders` supported ?
-    @property bool hasCreateOrder(OrderType type); // Is this order type supported ?
+    @property bool hasFetchOrderBook(this T)();  /// Is `fetchOrderBook` supported ?
+    @property bool hasFetchTicker(this T)();     /// Is `fetchTicker` supported ?
+    @property bool hasFetchOhlcv(this T)();      /// Is `fetchOhlcv` supported ?
+    @property bool hasFetchTrades(this T)();     /// Is `fetchTrades` supported ?
+    @property bool hasFetchBalance(this T)();    /// Is `fetchBalance` supported ?
+    @property bool hasFetchOpenOrders(this T)(); /// Is `fetchOpenOrders` supported ?
+    @property bool hasCreateOrder(OrderType type)(); /// Is this order type supported ?
+
+    alias hasCreateLimitOrder = hasCreateOrder!(OrderType.limit);
+    alias hasCreateMarketOrder = hasCreateOrder!(OrderType.market);
+    alias hasCreateStopLossOrder = hasCreateOrder!(OrderType.stopLoss);
+    alias hasCreateStopLossLimitOrder = hasCreateOrder!(OrderType.stopLossLimit);
+    alias hasCreateTakeProfitOrder = hasCreateOrder!(OrderType.takeProfit);
+    alias hasCreateTakeProfitLimitOrder = hasCreateOrder!(OrderType.takeProfitLimit);
+    alias hasCreateLimitMakerOrder = hasCreateOrder!(OrderType.limitMaker);
 
     void initialize();
 
@@ -492,7 +489,7 @@ interface IExchange
     void createTakeProfitLimitOrder(string symbol, TradeDirection side, TimeInForce timeInForce, float amount,
     float price, float stopLoss);
 
-    void createLimitMaker(string symbol, TradeDirection side, float amount, float price);
+    void createLimitMakerOrder(string symbol, TradeDirection side, float amount, float price);
 }
 
 /** Base class for implementing a new exchange.
@@ -520,12 +517,6 @@ private:
     Market[string] _marketsById; /// Markets by exchange id
     string[] _symbols;
     string[] _exchangeIds;
-    immutable bool _hasFetchOrderBook;
-    immutable bool _hasFetchTicker;
-    immutable bool _hasFetchOhlcv;
-    immutable bool _hasFetchTrades;
-    immutable bool _hasFetchBalance;
-    immutable bool _hasFetchOpenOrders;
 
 public /*properties*/:
     @property bool initialized() { return _initialized; }
@@ -533,25 +524,31 @@ public /*properties*/:
     @property Market[string] marketsById() { return _marketsById; }
     @property string[] symbols() { return _symbols; }
     @property string[] exchangeIds() { return _exchangeIds; }
-    @property bool hasFetchOrderBook() { return _hasFetchOrderBook; }
-    @property bool hasFetchTicker() { return _hasFetchTicker; }
-    @property bool hasFetchOhlcv() { return _hasFetchOhlcv; }
-    @property bool hasFetchTrades() { return _hasFetchTrades; }
-    @property bool hasFetchBalance() { return _hasFetchBalance; }
-    @property bool hasFetchOpenOrders() { return _hasFetchOpenOrders; }
-    @property bool hasCreateOrder(OrderType type) { return false; }
+
+    @property bool hasFetchOrderBook(this T)() { return __traits(isOverrideFunction, T.fetchOrderBook); }
+    @property bool hasFetchTicker(this T)() { return __traits(isOverrideFunction, T.fetchTicker); }
+    @property bool hasFetchOhlcv(this T)() { return __traits(isOverrideFunction, T.fetchTicker); }
+    @property bool hasFetchTrades(this T)() { return __traits(isOverrideFunction, T.fetchTrades); }
+    @property bool hasFetchBalance(this T)() { return __traits(isOverrideFunction, T.fetchBalance); }
+    @property bool hasFetchOpenOrders(this T)() { return __traits(isOverrideFunction, T.fetchOpenOrders); }
+    @property bool hasCreateOrder(OrderType type, this T)()
+    {
+        final switch(type) {
+            case market:            return __traits(isOverrideFunction, T.createMarketOrder);
+            case limit:             return __traits(isOverrideFunction, T.createLimitOrder);
+            case stopLoss:          return __traits(isOverrideFunction, T.createStopLossOrder);
+            case stopLossLimit:     return __traits(isOverrideFunction, T.createStopLossLimitOrder);
+            case takeProfit:        return __traits(isOverrideFunction, T.createTakeProfitOrder);
+            case takeProfitLimit:   return __traits(isOverrideFunction, T.createTakeProfitLimitOrder);
+            case limitMaker:        return __traits(isOverrideFunction, T.createLimitMakerOrder);
+            default:                return false;
+        }
+    }
 
 public:
     /// Constructor.
     this(this T)(Credentials credential, ExchangeConfiguration config = null)
     {
-        _hasFetchOrderBook = __traits(isOverrideFunction, T.fetchOrderBook);
-        _hasFetchTicker = __traits(isOverrideFunction, T.fetchTicker);
-        _hasFetchOhlcv = __traits(isOverrideFunction, T.fetchTicker);
-        _hasFetchTrades = __traits(isOverrideFunction, T.fetchTrades);
-        _hasFetchBalance = __traits(isOverrideFunction, T.fetchBalance);
-        _hasFetchOpenOrders = __traits(isOverrideFunction, T.fetchOpenOrders);
-
         _credentials = credential;
 
         if (config is null)
@@ -609,108 +606,13 @@ public:
 
     FullOrder[] fetchOpenOrders(string symbol) { throw new ExchangeException("not supported"); }
 
-    final void createLimitOrder(string symbol, TradeDirection side, TimeInForce timeInForce, float amount, float price)
-    {
-        enforceExchange(hasCreateOrder(OrderType.limit), "not supported");
-        _enforceSymbol(symbol);
-        NewOrder order = {
-            symbol: symbol,
-            type: OrderType.limit,
-            side: side,
-            timeInForce: timeInForce,
-            amount: amount,
-            price: price
-        };
-        _createOrder(order);
-    }
-
-    final void createMarketOrder(string symbol, TradeDirection side, float amount)
-    {
-        enforceExchange(hasCreateOrder(OrderType.market), "not supported");
-        _enforceSymbol(symbol);
-        NewOrder order = {
-            symbol: symbol,
-            type: OrderType.market,
-            side: side,
-            amount: amount,
-        };
-        _createOrder(order);
-    }
-
-    final void createStopLossOrder(string symbol, TradeDirection side, float amount, float stopLoss)
-    {
-        enforceExchange(hasCreateOrder(OrderType.stopLoss), "not supported");
-        _enforceSymbol(symbol);
-        NewOrder order = {
-            symbol: symbol,
-            type: OrderType.stopLoss,
-            side: side,
-            amount: amount
-        };
-        _createOrder(order);
-    }
-
-    final void createStopLossLimitOrder(string symbol, TradeDirection side, TimeInForce timeInForce,
-        float amount, float price, float stopLoss)
-    {
-        enforceExchange(hasCreateOrder(OrderType.stopLossLimit), "not supported");
-        _enforceSymbol(symbol);
-        NewOrder order = {
-            symbol: symbol,
-            type: OrderType.stopLossLimit,
-            side: side,
-            timeInForce: timeInForce,
-            amount: amount,
-            price: price,
-            stopLoss: stopLoss
-        };
-        _createOrder(order);
-    }
-
-    final void createTakeProfitOrder(string symbol, TradeDirection side, float amount, float stopLoss)
-    {
-        enforceExchange(hasCreateOrder(OrderType.takeProfit), "not supported");
-        _enforceSymbol(symbol);
-        NewOrder order = {
-            symbol: symbol,
-            type: OrderType.takeProfit,
-            side: side,
-            amount: amount,
-            stopLoss: stopLoss
-        };
-        _createOrder(order);
-    }
-
-    final void createTakeProfitLimitOrder(string symbol, TradeDirection side, TimeInForce timeInForce, float amount,
-        float price, float stopLoss)
-    {
-        enforceExchange(hasCreateOrder(OrderType.takeProfitLimit), "not supported");
-        _enforceSymbol(symbol);
-        NewOrder order = {
-            symbol: symbol,
-            type: OrderType.takeProfitLimit,
-            side: side,
-            timeInForce: timeInForce,
-            amount: amount,
-            price: price,
-            stopLoss: stopLoss
-        };
-        _createOrder(order);
-    }
-
-    final void createLimitMaker(string symbol, TradeDirection side, float amount, float price)
-    {
-        enforceExchange(hasCreateOrder(OrderType.limitMaker), "not supported");
-        _enforceSymbol(symbol);
-        NewOrder order = {
-            symbol: symbol,
-            type: OrderType.limitMaker,
-            side: side,
-            amount: amount,
-            price: price,
-        };
-        _createOrder(order);
-    }
+    void createLimitOrder(string symbol, TradeDirection side, TimeInForce timeInForce, float amount, float price)  { throw new ExchangeException("not supported"); }
+    void createMarketOrder(string symbol, TradeDirection side, float amount)  { throw new ExchangeException("not supported"); }
+    void createStopLossOrder(string symbol, TradeDirection side, float amount, float stopLoss)  { throw new ExchangeException("not supported"); }
+    void createStopLossLimitOrder(string symbol, TradeDirection side, TimeInForce timeInForce,float amount, float price, float stopLoss)  { throw new ExchangeException("not supported"); }
+    void createTakeProfitOrder(string symbol, TradeDirection side, float amount, float stopLoss)  { throw new ExchangeException("not supported"); }
+    void createTakeProfitLimitOrder(string symbol, TradeDirection side, TimeInForce timeInForce, float amount, float price, float stopLoss)  { throw new ExchangeException("not supported"); }
+    void createLimitMakerOrder(string symbol, TradeDirection side, float amount, float price)  { throw new ExchangeException("not supported"); }
 
 protected:
     /// Configure the api.
@@ -869,11 +771,6 @@ protected:
         if (market is null)
             market = _findMarket(echangeSymbol);
         return market.symbol;
-    }
-
-    void _createOrder(NewOrder order)
-    {
-
     }
 
 private:
