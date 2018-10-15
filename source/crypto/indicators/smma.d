@@ -4,7 +4,7 @@
 module crypto.exchanges.indicators.smma;
 
 
-import crypto.exchanges.indicators;
+import crypto.exchanges.indicators.base;
 
 
 /// Smoothed Simple Moving Average.

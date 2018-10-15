@@ -4,7 +4,7 @@
 module crypto.exchanges.indicators.sma;
 
 
-import crypto.exchanges.indicators;
+import crypto.exchanges.indicators.base;
 
 
 /// Simple Moving Average.

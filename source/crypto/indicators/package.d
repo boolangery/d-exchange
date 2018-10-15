@@ -4,18 +4,6 @@
 module crypto.exchanges.indicators;
 
 
-abstract class Indicator
-{
-public:
-    abstract float update(in float v) pure nothrow @safe;
-
-    float[] compute(float[] prices) pure nothrow @safe
-    {
-        float[] result;
-
-        foreach(price; prices)
-            result ~= update(price);;
-
-        return result;
-    }
-}
+public import crypto.exchanges.indicators.rsi;
+public import crypto.exchanges.indicators.sma;
+public import crypto.exchanges.indicators.smma;

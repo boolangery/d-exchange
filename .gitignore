@@ -8,3 +8,4 @@ docs.json
 docs
 exchanges.iml
 libcrypto.a
+crypto-test-library

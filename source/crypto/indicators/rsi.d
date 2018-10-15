@@ -6,7 +6,7 @@
 module crypto.exchanges.indicators.rsi;
 
 
-import crypto.exchanges.indicators;
+import crypto.exchanges.indicators.base;
 import crypto.exchanges.indicators.smma;
 
 /// Relative Strength Index Indicator.
