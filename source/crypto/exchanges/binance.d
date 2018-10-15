@@ -440,75 +440,127 @@ public:
         return result;
     }
 
-/*
-    override void _createOrder(NewOrder order)
+    override void createLimitOrder(string symbol, TradeDirection side, TimeInForce timeInForce, float amount, float price)
     {
+        _enforceSymbol(symbol);
+
         URLD endpoint = BaseUrl;
         endpoint.path = "/api/v3/order";
 
-        endpoint.queryParams.add("symbol", markets[order.symbol].id);
-        endpoint.queryParams.add("side", StdToTradeDirection[order.side]);
-        endpoint.queryParams.add("type", StdToOrderType[order.type]);
-
-
-        final switch(order.type) {
-            case OrderType.undefined:
-                break;
-
-            case OrderType.market:
-                endpoint.queryParams.add("quantity", order.amount.to!string);
-                break;
-
-            case OrderType.limit:
-                enforceExchange(!order.timeInForce.isNull, "timeInForce must not be null");
-                enforceExchange(!order.price.isNull, "price must not be null");
-                endpoint.queryParams.add("timeInForce", "GTC"); // Good Till Cancelled
-                endpoint.queryParams.add("price", order.price.to!string);
-                endpoint.queryParams.add("quantity", order.amount.to!string);
-                break;
-
-            case OrderType.stopLoss:
-                enforceExchange(!order.stopLoss.isNull, "stopLoss must not be null");
-                endpoint.queryParams.add("quantity", order.amount.to!string);
-                endpoint.queryParams.add("stopPrice", order.stopLoss.to!string);
-                break;
-
-            case OrderType.stopLossLimit:
-                enforceExchange(!order.timeInForce.isNull, "timeInForce must not be null");
-                enforceExchange(!order.price.isNull, "price must not be null");
-                enforceExchange(!order.stopLoss.isNull, "stopLoss must not be null");
-                endpoint.queryParams.add("timeInForce", "GTC"); // Good Till Cancelled
-                endpoint.queryParams.add("price", order.price.to!string);
-                endpoint.queryParams.add("quantity", order.amount.to!string);
-                endpoint.queryParams.add("stopPrice", order.stopLoss.to!string);
-                break;
-
-            case OrderType.takeProfit:
-                enforceExchange(!order.stopLoss.isNull, "stopLoss must not be null");
-                endpoint.queryParams.add("quantity", order.amount.to!string);
-                endpoint.queryParams.add("stopPrice", order.stopLoss.to!string);
-                break;
-
-            case OrderType.takeProfitLimit:
-                enforceExchange(!order.timeInForce.isNull, "timeInForce must not be null");
-                enforceExchange(!order.price.isNull, "price must not be null");
-                enforceExchange(!order.stopLoss.isNull, "stopLoss must not be null");
-                endpoint.queryParams.add("timeInForce", "GTC"); // Good Till Cancelled
-                endpoint.queryParams.add("price", order.price.to!string);
-                endpoint.queryParams.add("quantity", order.amount.to!string);
-                endpoint.queryParams.add("stopPrice", order.stopLoss.to!string);
-                break;
-
-            case OrderType.limitMaker:
-                enforceExchange(!order.price.isNull, "price must not be null");
-                endpoint.queryParams.add("timeInForce", "GTC"); // Good Till Cancelled
-                endpoint.queryParams.add("price", order.price.to!string);
-                endpoint.queryParams.add("quantity", order.amount.to!string);
-                break;
-        }
+        endpoint.queryParams.add("symbol", markets[symbol].id);
+        endpoint.queryParams.add("side", StdToTradeDirection[side]);
+        endpoint.queryParams.add("type", "LIMIT");
+        endpoint.queryParams.add("timeInForce", "GTC"); // Good Till Cancelled
+        endpoint.queryParams.add("price", price.to!string);
+        endpoint.queryParams.add("quantity", amount.to!string);
 
         Json response = _jsonHttpRequest(endpoint, HTTPMethod.GET);
-
         // TODO: parse response
-    }*/
+    }
+
+    override void createMarketOrder(string symbol, TradeDirection side, float amount)
+    {
+        _enforceSymbol(symbol);
+
+        URLD endpoint = BaseUrl;
+        endpoint.path = "/api/v3/order";
+
+        endpoint.queryParams.add("symbol", markets[symbol].id);
+        endpoint.queryParams.add("side", StdToTradeDirection[side]);
+        endpoint.queryParams.add("type", "LIMIT");
+        endpoint.queryParams.add("quantity", amount.to!string);
+
+        Json response = _jsonHttpRequest(endpoint, HTTPMethod.GET);
+        // TODO: parse response
+    }
+
+    override void createStopLossOrder(string symbol, TradeDirection side, float amount, float stopLoss)
+    {
+        _enforceSymbol(symbol);
+
+        URLD endpoint = BaseUrl;
+        endpoint.path = "/api/v3/order";
+
+        endpoint.queryParams.add("symbol", markets[symbol].id);
+        endpoint.queryParams.add("side", StdToTradeDirection[side]);
+        endpoint.queryParams.add("type", "LIMIT");
+        endpoint.queryParams.add("quantity", amount.to!string);
+        endpoint.queryParams.add("stopPrice", stopLoss.to!string);
+
+        Json response = _jsonHttpRequest(endpoint, HTTPMethod.GET);
+        // TODO: parse response
+    }
+
+    override void createStopLossLimitOrder(string symbol, TradeDirection side, TimeInForce timeInForce,float amount, float price, float stopLoss)
+    {
+        _enforceSymbol(symbol);
+
+        URLD endpoint = BaseUrl;
+        endpoint.path = "/api/v3/order";
+
+        endpoint.queryParams.add("symbol", markets[symbol].id);
+        endpoint.queryParams.add("side", StdToTradeDirection[side]);
+        endpoint.queryParams.add("type", "LIMIT");
+        endpoint.queryParams.add("timeInForce", "GTC"); // Good Till Cancelled
+        endpoint.queryParams.add("price", price.to!string);
+        endpoint.queryParams.add("quantity", amount.to!string);
+        endpoint.queryParams.add("stopPrice", stopLoss.to!string);
+
+        Json response = _jsonHttpRequest(endpoint, HTTPMethod.GET);
+        // TODO: parse response
+    }
+
+    override void createTakeProfitOrder(string symbol, TradeDirection side, float amount, float stopLoss)
+    {
+        _enforceSymbol(symbol);
+
+        URLD endpoint = BaseUrl;
+        endpoint.path = "/api/v3/order";
+
+        endpoint.queryParams.add("symbol", markets[symbol].id);
+        endpoint.queryParams.add("side", StdToTradeDirection[side]);
+        endpoint.queryParams.add("type", "LIMIT");
+        endpoint.queryParams.add("quantity", amount.to!string);
+        endpoint.queryParams.add("stopPrice", stopLoss.to!string);
+
+        Json response = _jsonHttpRequest(endpoint, HTTPMethod.GET);
+        // TODO: parse response
+    }
+
+    override void createTakeProfitLimitOrder(string symbol, TradeDirection side, TimeInForce timeInForce, float amount, float price, float stopLoss)
+    {
+        _enforceSymbol(symbol);
+
+        URLD endpoint = BaseUrl;
+        endpoint.path = "/api/v3/order";
+
+        endpoint.queryParams.add("symbol", markets[symbol].id);
+        endpoint.queryParams.add("side", StdToTradeDirection[side]);
+        endpoint.queryParams.add("type", "LIMIT");
+        endpoint.queryParams.add("timeInForce", "GTC"); // Good Till Cancelled
+        endpoint.queryParams.add("price", price.to!string);
+        endpoint.queryParams.add("quantity", amount.to!string);
+        endpoint.queryParams.add("stopPrice", stopLoss.to!string);
+
+        Json response = _jsonHttpRequest(endpoint, HTTPMethod.GET);
+        // TODO: parse response
+    }
+
+    override void createLimitMakerOrder(string symbol, TradeDirection side, float amount, float price)
+    {
+        _enforceSymbol(symbol);
+
+        URLD endpoint = BaseUrl;
+        endpoint.path = "/api/v3/order";
+
+        endpoint.queryParams.add("symbol", markets[symbol].id);
+        endpoint.queryParams.add("side", StdToTradeDirection[side]);
+        endpoint.queryParams.add("type", "LIMIT");
+        endpoint.queryParams.add("timeInForce", "GTC"); // Good Till Cancelled
+        endpoint.queryParams.add("price", price.to!string);
+        endpoint.queryParams.add("quantity", amount.to!string);
+
+        Json response = _jsonHttpRequest(endpoint, HTTPMethod.GET);
+        // TODO: parse response
+    }
 }
