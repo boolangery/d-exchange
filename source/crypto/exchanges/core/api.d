@@ -22,6 +22,8 @@ public import std.range.primitives : empty;
 public import std.exception : enforce;
 public import std.typecons : Nullable;
 public import std.string : format;
+/// Concurrency
+public import vibe.core.core : Task, runTask;
 
 enum Exchanges
 {
@@ -503,7 +505,7 @@ interface IExchange
     void createLimitMakerOrder(string symbol, TradeDirection side, float amount, float price);
 
     /// A a candlestick listener.
-    void addCandleListener(string symbol, CandleListener listener);
+    void addCandleListener(string symbol, CandlestickInterval interval, CandleListener listener);
 }
 
 /** Base class for implementing a new exchange.
@@ -631,7 +633,7 @@ public:
     void createTakeProfitLimitOrder(string symbol, TradeDirection side, TimeInForce timeInForce, float amount, float price, float stopLoss)  { throw new ExchangeException("not supported"); }
     void createLimitMakerOrder(string symbol, TradeDirection side, float amount, float price) { throw new ExchangeException("not supported"); }
 
-    void addCandleListener(string symbol, CandleListener listener) { throw new ExchangeException("not supported"); }
+    void addCandleListener(string symbol, CandlestickInterval interval, CandleListener listener) { throw new ExchangeException("not supported"); }
 
 protected:
     /// Static constructor.
