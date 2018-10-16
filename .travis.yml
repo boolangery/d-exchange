@@ -1,0 +1,23 @@
+language: d
+
+sudo: false
+
+os:
+  	- linux
+
+d:
+  	- dmd
+
+script:
+	- dub build --build=ddox --compiler=${DC}
+
+deploy:
+	provider: pages
+  	skip-cleanup: true
+  	local_dir: docs
+  	github-token: $GITHUB_TOKEN
+  	keep-history: true
+  	on:
+    	branch: master
+	repo: boolangery/boolangery.github.io
+  	target_branch: master
