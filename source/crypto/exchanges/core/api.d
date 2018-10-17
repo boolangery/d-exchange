@@ -272,7 +272,7 @@ public:
     }
 }
 
-alias CandleListener = void delegate(scope Candlestick);
+alias CandleListener = void delegate(scope Candlestick) @safe;
 
 /// Candlestick time interval.
 enum CandlestickInterval

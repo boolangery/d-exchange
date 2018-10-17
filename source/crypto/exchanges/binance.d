@@ -5,6 +5,8 @@ module crypto.exchanges.binance;
 
 public import crypto.exchanges.core.api;
 
+import std.string : toLower;
+
 
 /** Binance exchange. */
 class BinanceExchange: Exchange
@@ -65,9 +67,8 @@ public /*properties*/:
 
 private:
     CombinedStreams _wsStreams;
-    CandleListener[string] _candleListeners; /// Candle listeners by binance symbol
-    WebSocket _currentWebSocket;
-    Task _task;
+    WebSocket _currentWebSocket = null;
+    Task _WsTask;
 
 protected:
     DateTime _timestampToDateTime(long ts)
@@ -144,60 +145,30 @@ protected:
     /// Refresh websocket connection with stream list.
     void _refreshWebSocket()
     {
-        import std.array : join;
-        import vibe.data.json;
+        import vibe.data.json : parseJson;
         import std.format : formattedRead;
 
         // try to close current websocket
-        /*
-        try {
-            if (_currentWebSocket !is null)
-                _currentWebSocket.close();
+        if ((_currentWebSocket !is null) && _WsTask.running) {
+            _currentWebSocket.close();
+            _WsTask.join(); // wait task completion
         }
-        catch (Exception e) {
-            error(e.msg);
-        }*/
 
-        //_task = runTask({
+        _WsTask = runTask({
             auto wsUrl = URL(WsEndpoint ~ "/" ~ _wsStreams.toString());
-            info(wsUrl);
             auto ws = connectWebSocket(wsUrl);
+            _currentWebSocket = ws;
 
             while (ws.waitForData())
             {
                 auto text = ws.receiveText;
                 auto response = parseJson(text);
-                infof("%s", response);
+                auto streamId = response["stream"].get!string;
+                auto streamData = response["data"];
+
+                _wsStreams.process(streamId, streamData);
             }
-        //});
-
-        _task.join();
-        info("after");
-        //_currentWebSocket = connectWebSocket(URL(url));
-
-        /*, (scope WebSocket ws) {
-            _currentWebSocket = ws;
-
-            while(ws.connected) {
-                string text = ws.receiveText();
-                auto response = parseJson(text);
-
-
-                string pair;
-                string stream;
-                resp.stream.formattedRead!"%s@%s"(pair, stream);
-
-                if (stream == "depth")
-                    if (pair in _candleListeners)
-                        _candleListeners[pair](new Candlestick());
-
-                info(text);
-
-            }
-
-            _currentWebSocket = null;
         });
-        */
     }
 
 public:
@@ -221,10 +192,9 @@ public:
     override void addCandleListener(string symbol, CandlestickInterval interval, CandleListener listener)
     {
         _enforceSymbol(symbol);
-        auto binanceSymbol = markets[symbol].id;
-
-        _wsStreams.add(new CandlestickStream(binanceSymbol, interval));
-        _candleListeners[binanceSymbol] = listener;
+        auto stream = new CandlestickStream(markets[symbol].id, interval);
+        stream.listener = listener;
+        _wsStreams.add(stream);
         _refreshWebSocket();
     }
 
@@ -586,11 +556,13 @@ public:
 interface ICombinedStream
 {
     string toString() const @safe;
+
+    void process(Json data) @safe const;
 }
 
-/// The Aggregate Trade Streams push trade information that is aggregated
-/// for a single taker order.
-class AggregateTradeStream : ICombinedStream
+
+/// Simple symbol stream
+abstract class SymbolStream : ICombinedStream
 {
     string symbol;
 
@@ -598,6 +570,18 @@ class AggregateTradeStream : ICombinedStream
     {
         this.symbol = symbol;
     }
+
+    void process(Json data) @safe const
+    {
+        // do nothing
+    }
+}
+
+/// The Aggregate Trade Streams push trade information that is aggregated
+/// for a single taker order.
+class AggregateTradeStream : SymbolStream
+{
+    this(string symbol) { super(symbol); }
 
     override string toString() const @safe
     {
@@ -607,7 +591,7 @@ class AggregateTradeStream : ICombinedStream
 
 /// The Trade Streams push raw trade information; each trade has a unique
 /// buyer and seller.
-class TradeStream : AggregateTradeStream
+class TradeStream : SymbolStream
 {
     this(string symbol) { super(symbol); }
 
@@ -618,9 +602,10 @@ class TradeStream : AggregateTradeStream
 }
 
 /// The Kline/Candlestick Stream push updates to the current klines/candlestick every second.
-class CandlestickStream : AggregateTradeStream
+class CandlestickStream : SymbolStream
 {
     CandlestickInterval interval;
+    CandleListener listener;
 
     this(string symbol, CandlestickInterval interval)
     {
@@ -630,18 +615,36 @@ class CandlestickStream : AggregateTradeStream
 
     override string toString() const @safe
     {
-        return format("%s@kline_%s", symbol, Exchange.CandlestickIntervalToStr[interval]);
+        return format("%s@kline_%s", symbol.toLower(), Exchange.CandlestickIntervalToStr[interval]);
+    }
+
+    /// Parse payload.
+    /// https://github.com/binance-exchange/binance-official-api-docs/blob/master/web-socket-streams.md#klinecandlestick-streams
+    override void process(Json data) @safe const
+    {
+        auto candle = new Candlestick();
+        auto json = data["k"];
+
+        candle.timestamp = json["T"].enforceGet!long;
+        candle.open = json["o"].enforceGetStrToF;
+        candle.high = json["h"].enforceGetStrToF;
+        candle.low = json["l"].enforceGetStrToF;
+        candle.close = json["c"].enforceGetStrToF;
+        candle.volume = json["v"].enforceGetStrToF;
+
+        if (listener)
+            listener(candle);
     }
 }
 
 /// 24hr Mini Ticker statistics for a single symbol pushed every second.
-class IndividualSymbolMiniTickerStream : AggregateTradeStream
+class IndividualSymbolMiniTickerStream : SymbolStream
 {
     this(string symbol) { super(symbol); }
 
     override string toString() const @safe
     {
-        return format("%s@miniTicker", symbol);
+        return format("%s@miniTicker", symbol.toLower());
     }
 }
 
@@ -652,16 +655,21 @@ class AllMarketMiniTickersStream : ICombinedStream
     {
         return "!miniTicker@arr";
     }
+
+    void process(Json data) @safe const
+    {
+        // do nothing
+    }
 }
 
 /// 24hr Ticker statistics for a single symbol pushed every second.
-class IndividualSymbolTickerStream : AggregateTradeStream
+class IndividualSymbolTickerStream : SymbolStream
 {
     this(string symbol) { super(symbol); }
 
     override string toString() const @safe
     {
-        return format("%s@ticker", symbol);
+        return format("%s@ticker", symbol.toLower());
     }
 }
 
@@ -671,6 +679,11 @@ class AllMarketTickersStream : ICombinedStream
     override string toString() const @safe
     {
         return "!ticker@arr";
+    }
+
+    void process(Json data) @safe const
+    {
+        // do nothing
     }
 }
 
@@ -694,7 +707,7 @@ class PartialBookDepthStream : AggregateTradeStream
 
     override string toString() const @safe
     {
-        return format("%s@depth%d", symbol, cast(int) depth);
+        return format("%s@depth%d", symbol.toLower(), cast(int) depth);
     }
 }
 
@@ -704,7 +717,7 @@ class DiffDepthStream : AggregateTradeStream
 
     override string toString() const @safe
     {
-        return format("%s@depth", symbol);
+        return format("%s@depth", symbol.toLower());
     }
 }
 
@@ -713,15 +726,15 @@ class DiffDepthStream : AggregateTradeStream
 final class CombinedStreams
 {
 private:
-    const(ICombinedStream)[] _streams;
+    ICombinedStream[string] _streams;
 
 public:
-    void add(in ICombinedStream stream)
+    void add(ICombinedStream stream)
     {
-        _streams ~= stream;
+        _streams[stream.toString()] = stream;
     }
 
-    override string toString() @safe
+    override string toString() @safe const
     {
         import std.array : join;
 
@@ -731,5 +744,11 @@ public:
             streamsStr ~= stream.toString();
 
         return "stream?streams=" ~ streamsStr.join("/");
+    }
+
+    void process(string streamId, Json data)
+    {
+        if (streamId in _streams)
+            _streams[streamId].process(data);
     }
 }
