@@ -420,14 +420,14 @@ interface IExchange
     @property string[] symbols();
     /// Exchange ids.
     @property string[] exchangeIds();
-    @property bool hasFetchOrderBook(this T)();  /// Is `fetchOrderBook` supported ?
-    @property bool hasFetchTicker(this T)();     /// Is `fetchTicker` supported ?
-    @property bool hasFetchOhlcv(this T)();      /// Is `fetchOhlcv` supported ?
-    @property bool hasFetchTrades(this T)();     /// Is `fetchTrades` supported ?
-    @property bool hasFetchBalance(this T)();    /// Is `fetchBalance` supported ?
-    @property bool hasFetchOpenOrders(this T)(); /// Is `fetchOpenOrders` supported ?
+    @property bool hasFetchOrderBook();  /// Is `fetchOrderBook` supported ?
+    @property bool hasFetchTicker();     /// Is `fetchTicker` supported ?
+    @property bool hasFetchOhlcv();      /// Is `fetchOhlcv` supported ?
+    @property bool hasFetchTrades();     /// Is `fetchTrades` supported ?
+    @property bool hasFetchBalance();    /// Is `fetchBalance` supported ?
+    @property bool hasFetchOpenOrders(); /// Is `fetchOpenOrders` supported ?
     @property bool hasCreateOrder(OrderType type)(); /// Is this order type supported ?
-    @property bool hasAddCandleListener(this T)();
+    @property bool hasAddCandleListener();
 
     alias hasCreateLimitOrder = hasCreateOrder!(OrderType.limit);
     alias hasCreateMarketOrder = hasCreateOrder!(OrderType.market);
@@ -530,6 +530,9 @@ private:
     string[] _symbols;
     string[] _exchangeIds;
 
+    immutable bool[string] _has;
+    immutable bool[OrderType] _hasOrder;
+
 public /*properties*/:
     @property bool initialized() { return _initialized; }
     @property Market[string] markets() { initialize(); return _markets; }
@@ -537,25 +540,14 @@ public /*properties*/:
     @property string[] symbols() { return _symbols; }
     @property string[] exchangeIds() { return _exchangeIds; }
 
-    @property bool hasFetchOrderBook(this T)() { return __traits(isOverrideFunction, T.fetchOrderBook); }
-    @property bool hasFetchTicker(this T)() { return __traits(isOverrideFunction, T.fetchTicker); }
-    @property bool hasFetchOhlcv(this T)() { return __traits(isOverrideFunction, T.fetchTicker); }
-    @property bool hasFetchTrades(this T)() { return __traits(isOverrideFunction, T.fetchTrades); }
-    @property bool hasFetchBalance(this T)() { return __traits(isOverrideFunction, T.fetchBalance); }
-    @property bool hasFetchOpenOrders(this T)() { return __traits(isOverrideFunction, T.fetchOpenOrders); }
-    @property bool hasCreateOrder(OrderType type, this T)()
-    {
-        final switch(type) {
-            case market:            return __traits(isOverrideFunction, T.createMarketOrder);
-            case limit:             return __traits(isOverrideFunction, T.createLimitOrder);
-            case stopLoss:          return __traits(isOverrideFunction, T.createStopLossOrder);
-            case stopLossLimit:     return __traits(isOverrideFunction, T.createStopLossLimitOrder);
-            case takeProfit:        return __traits(isOverrideFunction, T.createTakeProfitOrder);
-            case takeProfitLimit:   return __traits(isOverrideFunction, T.createTakeProfitLimitOrder);
-            case limitMaker:        return __traits(isOverrideFunction, T.createLimitMakerOrder);
-            default:                return false;
-        }
-    }
+    @property bool hasFetchOrderBook()    { return _has["fetchOrderBook"]; }
+    @property bool hasFetchTicker()       { return _has["fetchTicker"]; }
+    @property bool hasFetchOhlcv()        { return _has["fetchTicker"]; }
+    @property bool hasFetchTrades()       { return _has["fetchTrades"]; }
+    @property bool hasFetchBalance()      { return _has["fetchBalance"]; }
+    @property bool hasFetchOpenOrders()   { return _has["fetchOpenOrders"]; }
+    @property bool hasAddCandleListener() { return _has["addCandleListener"]; }
+    @property bool hasCreateOrder(OrderType type)() { return _hasOrder[type]; }
 
     // public constants
     static immutable string[CandlestickInterval] CandlestickIntervalToStr;
@@ -564,6 +556,26 @@ public:
     /// Constructor.
     this(this T)(Credentials credential, ExchangeConfiguration config = null)
     {
+        // fill features:
+        _has = [
+            "fetchOrderBook":       __traits(isOverrideFunction, T.fetchOrderBook),
+            "fetchTicker":          __traits(isOverrideFunction, T.fetchTicker),
+            "fetchOhlcv":           __traits(isOverrideFunction, T.fetchTicker),
+            "fetchTrades":          __traits(isOverrideFunction, T.fetchTrades),
+            "fetchBalance":         __traits(isOverrideFunction, T.fetchBalance),
+            "fetchOpenOrders":      __traits(isOverrideFunction, T.fetchOpenOrders),
+            "addCandleListener":    __traits(isOverrideFunction, T.addCandleListener),
+        ];
+        _hasOrder = [
+            OrderType.market:          __traits(isOverrideFunction, T.createMarketOrder),
+            OrderType.limit:           __traits(isOverrideFunction, T.createLimitOrder),
+            OrderType.stopLoss:        __traits(isOverrideFunction, T.createStopLossOrder),
+            OrderType.stopLossLimit:   __traits(isOverrideFunction, T.createStopLossLimitOrder),
+            OrderType.takeProfit:      __traits(isOverrideFunction, T.createTakeProfitOrder),
+            OrderType.takeProfitLimit: __traits(isOverrideFunction, T.createTakeProfitLimitOrder),
+            OrderType.limitMaker:      __traits(isOverrideFunction, T.createLimitMakerOrder),
+        ];
+
         _credentials = credential;
 
         if (config is null)
@@ -806,4 +818,25 @@ private:
         _exchangeIds = _marketsById.keys();
         return _markets;
     }
+}
+
+///
+unittest
+{
+    class MyExchange : Exchange
+    {
+        this(Credentials credential, ExchangeConfiguration config = null)
+        {
+            super(credential, config);
+        }
+        override Market[] fetchMarkets() { return null; }
+        override void _configure(ref Configuration config) {}
+        override Trade[] fetchTrades(string symbol, int limit) { return null; }
+    }
+
+    Credentials credential;
+    IExchange exchange = new MyExchange(credential);
+
+    assert(!exchange.hasFetchOhlcv);
+    assert(exchange.hasFetchTrades);
 }
