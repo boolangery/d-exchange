@@ -25,10 +25,6 @@ public import std.string : format;
 /// Concurrency
 public import vibe.core.core : Task, runTask;
 
-enum Exchanges
-{
-    bittrex = "bittrex"
-}
 
 enum RateType {perMilis, perSecond, perMinute, perHour}
 
@@ -775,9 +771,9 @@ protected:
 
     long _fetchServerMillisTimestamp() @safe { return getMillisTimestamp(); }
 
-    /** Ensure no error in a binance json response.
+    /** Ensure no error in a json response.
     It throw exception depending of the error code. */
-    void _enforceNoError(in Json binanceResponse) @safe const
+    void _enforceNoError(in Json response) @safe const
     {
         // do nothing
     }
