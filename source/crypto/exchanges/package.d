@@ -8,7 +8,7 @@ public import crypto.exchanges.binance;
 
 enum Exchanges
 {
-    binance
+    binance = "binance"
 }
 
 static class Factory

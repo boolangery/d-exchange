@@ -2,6 +2,7 @@ module crypto.exchanges.core.utils;
 
 
 public import crypto.exchanges.core.utils.json;
+public import std.datetime : DateTime;
 
 
 /** Transform an array to an associative array by indexing the initial array
@@ -30,6 +31,14 @@ long getMillisTimestamp() @safe
 
     auto now = Clock.currTime;
     return now.toUnixTime() * 1000 + now.fracSecs.total!"msecs";
+}
+
+long toMillisUnixTime(DateTime time)
+{
+    import std.datetime.systime : SysTime;
+
+    auto systime = SysTime(time); // use local timezone
+    return systime.toUnixTime() * 1000 + systime.fracSecs.total!"msecs";
 }
 
 /** Reverse an associative array. */

@@ -458,7 +458,7 @@ interface IExchange
 
     /** Fetch OHLCV data.
     Supported if `hasFetchOhlcv` is true. */
-    Candlestick[] fetchOhlcv(string symbol, CandlestickInterval interval, int limit);
+    Candlestick[] fetchOhlcv(string symbol, CandlestickInterval interval, DateTime from, DateTime to, int limit);
 
     /** Returns the list of markets as an object indexed by symbol and caches it with the
     exchange instance. Returns cached markets if loaded already, unless the reload = true f
@@ -610,7 +610,7 @@ public:
     PriceTicker fetchTicker(string symbol) { throw new ExchangeException("not supported"); }
 
     // Fetch OHLCV data.
-    Candlestick[] fetchOhlcv(string symbol, CandlestickInterval interval, int limit) { throw new ExchangeException("not supported"); }
+    Candlestick[] fetchOhlcv(string symbol, CandlestickInterval interval, DateTime from, DateTime to, int limit) { throw new ExchangeException("not supported"); }
 
     Trade[] fetchTrades(string symbol, int limit) { throw new ExchangeException("not supported"); }
 

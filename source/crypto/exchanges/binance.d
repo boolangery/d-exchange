@@ -310,7 +310,7 @@ public:
         return result;
     }
 
-    override Candlestick[] fetchOhlcv(string symbol, CandlestickInterval interval, int limit=500)
+    override Candlestick[] fetchOhlcv(string symbol, CandlestickInterval interval, DateTime from, DateTime to, int limit=500)
     {
         _enforceSymbol(symbol);
         initialize();
@@ -319,6 +319,8 @@ public:
         endpoint.path = "/api/v1/klines";
         endpoint.queryParams.add("symbol", markets[symbol].id);
         endpoint.queryParams.add("interval", _candlestickIntervalToStr(interval));
+        endpoint.queryParams.add("startTime", (from.toMillisUnixTime() - _timeDiffMs).to!string);
+        endpoint.queryParams.add("endTime", (to.toMillisUnixTime() - _timeDiffMs).to!string);
         endpoint.queryParams.add("limit", limit.to!string);
         Json response = _jsonHttpRequest(endpoint, HTTPMethod.GET);
         Candlestick[] result;
