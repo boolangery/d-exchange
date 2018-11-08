@@ -184,9 +184,9 @@ public:
 
     }
 
-    override void _configure(ref Configuration config)
+    override void _configure(ref InternalConfiguration config)
     {
-
+        config.fetchOhlcvConfig.limits = [500, 1000];
     }
 
     override void addCandleListener(string symbol, CandlestickInterval interval, CandleListener listener)

@@ -48,7 +48,7 @@ TestConfiguration[string] getTestConfig() {
     import std.traits;
     import vibe.data.json;
 
-    import crypto.exchanges.core.api : Exchanges;
+    import crypto.exchanges : Exchanges;
 
     immutable FileName = "./apiConfigs.json";
 

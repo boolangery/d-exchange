@@ -364,15 +364,18 @@ class OrderFee
     float rate; /// the fee rate (if available)
 }
 
-/** Api configuration. */
-struct Configuration
+/** Internal Api configuration. */
+struct InternalConfiguration
 {
-    string id;      /// exchange unique id
-    string name;    /// display name
-    string ver;     /// api version
     int rateLimit = 36000;  /// number or request per rateLimitType
     RateType rateLimitType; /// rate limit type, limit per second, minute, hour..
     bool substituteCommonCurrencyCodes = true;
+    FetchOhlcvInternalConfig fetchOhlcvConfig;
+}
+
+struct FetchOhlcvInternalConfig
+{
+    int[] limits;
 }
 
 enum TimeInForce
@@ -521,7 +524,7 @@ protected:
 
 private:
     CacheManager _cache;
-    Configuration _configuration;
+    InternalConfiguration _configuration;
     RateLimitManager _rateManager;
 
     bool _initialized;
@@ -667,7 +670,7 @@ protected:
     }
 
     /// Configure the api.
-    abstract void _configure(ref Configuration config);
+    abstract void _configure(ref InternalConfiguration config);
 
     /// Return an unix timestamp.
     pragma(inline) long _getUnixTimestamp() const
@@ -830,7 +833,7 @@ unittest
             super(credential, config);
         }
         override Market[] fetchMarkets() { return null; }
-        override void _configure(ref Configuration config) {}
+        override void _configure(ref InternalConfiguration config) {}
         override Trade[] fetchTrades(string symbol, int limit) { return null; }
     }
 

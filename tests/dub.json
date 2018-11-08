@@ -14,8 +14,14 @@
 
 		"preBuildCommands": ["dub run unit-threaded -c gen_ut_main -- -f bin/ut.d"],
 		"mainSourceFile": "bin/ut.d",
+	},
+	{
+		"name": "application",
+		"targetType": "executable",
 
-		"subConfigurations": {
-		}
+		"dependencies": {
+			"crypto": {"path": "../"},
+			"unit-threaded": "*"
+		},
 	}]
 }
