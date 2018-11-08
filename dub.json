@@ -1,5 +1,5 @@
 {
-	"name": "crypto",
+	"name": "crypto-exchanges",
 	"authors": ["Eliott Dumeix"],
 	"description": "Cryptocurrencies exchange API",
 	"license": "MIT",
