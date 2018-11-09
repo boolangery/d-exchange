@@ -373,9 +373,10 @@ struct InternalConfiguration
     FetchOhlcvInternalConfig fetchOhlcvConfig;
 }
 
+/** Fetch Ohlcv endpoint settings. */
 struct FetchOhlcvInternalConfig
 {
-    int[] limits;
+    int[] limits; // allowed limits
 }
 
 enum TimeInForce
@@ -415,6 +416,7 @@ interface IExchange
     You can call initialize() to force exchange initialization or it will be initialized
     automaticaly when needed. */
     @property bool initialized();
+    @property const(InternalConfiguration) configuration();
     /// Markets indexed by unified symbol.
     @property Market[string] markets();
     /// Markets indexed by exchange id.
@@ -538,6 +540,7 @@ private:
 
 public /*properties*/:
     @property bool initialized() { return _initialized; }
+    @property const(InternalConfiguration) configuration() { return _configuration; }
     @property Market[string] markets() { initialize(); return _markets; }
     @property Market[string] marketsById() { return _marketsById; }
     @property string[] symbols() { return _symbols; }
