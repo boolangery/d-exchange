@@ -266,6 +266,11 @@ public:
     {
         return close < open;
     }
+
+    int opCmp(ref const Candlestick other) const
+    {
+        return cast(int) (this.timestamp - other.timestamp);
+    }
 }
 
 alias CandleListener = void delegate(scope Candlestick) @safe;
