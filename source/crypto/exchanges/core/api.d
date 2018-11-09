@@ -415,24 +415,24 @@ interface IExchange
     /** Is the exhange inititialized ?
     You can call initialize() to force exchange initialization or it will be initialized
     automaticaly when needed. */
-    @property bool initialized();
+    @property bool initialized() const;
     @property const(InternalConfiguration) configuration();
     /// Markets indexed by unified symbol.
-    @property Market[string] markets();
+    @property const(Market[string]) markets();
     /// Markets indexed by exchange id.
-    @property Market[string] marketsById();
+    @property const(Market[string]) marketsById() const;
     /// Available exchange symbols.
-    @property string[] symbols();
+    @property const(string[]) symbols() const;
     /// Exchange ids.
-    @property string[] exchangeIds();
-    @property bool hasFetchOrderBook();  /// Is `fetchOrderBook` supported ?
-    @property bool hasFetchTicker();     /// Is `fetchTicker` supported ?
-    @property bool hasFetchOhlcv();      /// Is `fetchOhlcv` supported ?
-    @property bool hasFetchTrades();     /// Is `fetchTrades` supported ?
-    @property bool hasFetchBalance();    /// Is `fetchBalance` supported ?
-    @property bool hasFetchOpenOrders(); /// Is `fetchOpenOrders` supported ?
-    @property bool hasCreateOrder(OrderType type)(); /// Is this order type supported ?
-    @property bool hasAddCandleListener();
+    @property const(string[]) exchangeIds() const;
+    @property bool hasFetchOrderBook() const;  /// Is `fetchOrderBook` supported ?
+    @property bool hasFetchTicker() const;     /// Is `fetchTicker` supported ?
+    @property bool hasFetchOhlcv() const;      /// Is `fetchOhlcv` supported ?
+    @property bool hasFetchTrades() const;     /// Is `fetchTrades` supported ?
+    @property bool hasFetchBalance() const;    /// Is `fetchBalance` supported ?
+    @property bool hasFetchOpenOrders() const; /// Is `fetchOpenOrders` supported ?
+    @property bool hasCreateOrder(OrderType type)() const; /// Is this order type supported ?
+    @property bool hasAddCandleListener() const;
 
     alias hasCreateLimitOrder = hasCreateOrder!(OrderType.limit);
     alias hasCreateMarketOrder = hasCreateOrder!(OrderType.market);
@@ -539,21 +539,21 @@ private:
     immutable bool[OrderType] _hasOrder;
 
 public /*properties*/:
-    @property bool initialized() { return _initialized; }
+    @property bool initialized() const { return _initialized; }
     @property const(InternalConfiguration) configuration() { return _configuration; }
-    @property Market[string] markets() { initialize(); return _markets; }
-    @property Market[string] marketsById() { return _marketsById; }
-    @property string[] symbols() { return _symbols; }
-    @property string[] exchangeIds() { return _exchangeIds; }
+    @property const(Market[string]) markets() { initialize(); return _markets; }
+    @property const(Market[string]) marketsById() const { return _marketsById; }
+    @property const(string[]) symbols() const { return _symbols; }
+    @property const(string[]) exchangeIds() const { return _exchangeIds; }
 
-    @property bool hasFetchOrderBook()    { return _has["fetchOrderBook"]; }
-    @property bool hasFetchTicker()       { return _has["fetchTicker"]; }
-    @property bool hasFetchOhlcv()        { return _has["fetchTicker"]; }
-    @property bool hasFetchTrades()       { return _has["fetchTrades"]; }
-    @property bool hasFetchBalance()      { return _has["fetchBalance"]; }
-    @property bool hasFetchOpenOrders()   { return _has["fetchOpenOrders"]; }
-    @property bool hasAddCandleListener() { return _has["addCandleListener"]; }
-    @property bool hasCreateOrder(OrderType type)() { return _hasOrder[type]; }
+    @property bool hasFetchOrderBook()    const { return _has["fetchOrderBook"]; }
+    @property bool hasFetchTicker()       const { return _has["fetchTicker"]; }
+    @property bool hasFetchOhlcv()        const { return _has["fetchTicker"]; }
+    @property bool hasFetchTrades()       const { return _has["fetchTrades"]; }
+    @property bool hasFetchBalance()      const { return _has["fetchBalance"]; }
+    @property bool hasFetchOpenOrders()   const { return _has["fetchOpenOrders"]; }
+    @property bool hasAddCandleListener() const { return _has["addCandleListener"]; }
+    @property bool hasCreateOrder(OrderType type)() const { return _hasOrder[type]; }
 
     // public constants
     static immutable string[CandlestickInterval] CandlestickIntervalToStr;
