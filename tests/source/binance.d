@@ -19,10 +19,7 @@ static this()
 unittest {
     auto binance = new BinanceExchange(_binanceCredentials);
 
-    binance.addCandleListener("ETH/BTC", CandlestickInterval._1m, (scope candle) {
-        //assert(false);
-        writelnUt("new candle");
-    });
+
 
     //binance.addCandleListener("ETH/BTC", CandlestickInterval._1m, (scope candle) {
     //    writelnUt("new candle");
@@ -43,11 +40,5 @@ void main() {
 
     auto binance = new BinanceExchange(_binanceCredentials);
 
-    auto from = DateTime(2018, 10, 19, 3, 50, 10);
-    auto to   = DateTime(2018, 10, 19, 13, 50, 10);
-
-    auto candles = binance.fetchOhlcv("ETH/BTC", CandlestickInterval._1h, from, to);
-
-    foreach(candle; candles)
-        writeln(serializeToPrettyJson(candle));
+    auto balances = binance.fetchBalance();
 }

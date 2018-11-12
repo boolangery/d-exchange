@@ -8,7 +8,7 @@
 		"targetType": "executable",
 
 		"dependencies": {
-			"crypto": {"path": "../"},
+			"crypto-exchanges": {"path": "../"},
 			"unit-threaded": "*"
 		},
 
@@ -20,7 +20,7 @@
 		"targetType": "executable",
 
 		"dependencies": {
-			"crypto": {"path": "../"},
+			"crypto-exchanges": {"path": "../"},
 			"unit-threaded": "*"
 		},
 	}]
